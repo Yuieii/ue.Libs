@@ -55,18 +55,18 @@ jobs:
           
       - name: Compare strings
         id: compare_versions
-          run: |
-            # Find the max version by comparing VERSION and LATEST_TAG and save the result into the variable GREATER_VERSION
-            GREATER_VERSION=$(printf "%s\n%s" "$VERSION" "${LATEST_TAG#v}" | sort -V | tail -n 1)
-            if [[ "$VERSION" == "$GREATER_VERSION" && "$VERSION" != "${LATEST_TAG#v}" ]]; then
-              # If the version in the project configuration file is higher than the tag version, then the check is passed
-              echo "The new release version is ${LATEST_TAG#v}"
-              echo "is_valid=true" >> $GITHUB_OUTPUT
-            else
-              # Otherwise it is signaled about the error
-              echo "The project version is not incremented"
-              echo "is_valid=false" >> $GITHUB_OUTPUT
-            fi
+        run: |
+          # Find the max version by comparing VERSION and LATEST_TAG and save the result into the variable GREATER_VERSION
+          GREATER_VERSION=$(printf "%s\n%s" "$VERSION" "${LATEST_TAG#v}" | sort -V | tail -n 1)
+          if [[ "$VERSION" == "$GREATER_VERSION" && "$VERSION" != "${LATEST_TAG#v}" ]]; then
+            # If the version in the project configuration file is higher than the tag version, then the check is passed
+            echo "The new release version is ${LATEST_TAG#v}"
+            echo "is_valid=true" >> $GITHUB_OUTPUT
+          else
+            # Otherwise it is signaled about the error
+            echo "The project version is not incremented"
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+          fi
             
   tag_and_push:
     name: Create and push release tag
