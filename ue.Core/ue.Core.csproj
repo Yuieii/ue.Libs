@@ -7,11 +7,11 @@
         <Title>ue.Core</Title>
         <Authors>Yuieii</Authors>
         <RepositoryUrl>https://github.com/Yuieii/ue.Libs</RepositoryUrl>
-        <Version>0.0.1</Version>
+        <Version>0.0.2</Version>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
+      <PackageReference Include="JetBrains.Annotations" Version="*" />
     </ItemGroup>
 
 </Project>
