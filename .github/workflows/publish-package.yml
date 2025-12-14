@@ -1,4 +1,4 @@
-name: Publish Package
+name: Test & Publish Package
 
 on:
   push:
@@ -112,6 +112,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+
+      - name: Build & Pack
+        run: dotnet build --configuration Release ./ue.Core
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
