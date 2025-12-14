@@ -125,7 +125,7 @@ jobs:
           name: nuget
           if-no-files-found: error
           retention-days: 7
-          path: ${{ github.workspace }}/bin/Release/*.nupkg
+          path: ${{ github.workspace }}/ue.Core/bin/Release/*.nupkg
 
   deploy:
     name: Deploy NuGet
