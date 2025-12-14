@@ -136,6 +136,10 @@ jobs:
     if: success()
     env:
       NuGetDirectory: ${{ github.workspace }}/nuget
+      
+    permissions: 
+      packages: write
+      
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v6
