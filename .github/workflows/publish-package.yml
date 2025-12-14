@@ -73,6 +73,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [run_test, check_version]
     if: ${{ success() && needs.check_version.outputs.is_valid == 'true' }}
+    
+    permissions: 
+      contents: write
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
