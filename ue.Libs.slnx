@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ue.Core/ue.Core.csproj" />
+  <Project Path="ue.Core.Tests/ue.Core.Tests.csproj" />
+</Solution>

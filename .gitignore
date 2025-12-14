@@ -1,0 +1,8 @@
+# 一些不該出現在 Git 的東西
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+.idea/
+*.DotSettings.user
