@@ -20,14 +20,11 @@ namespace ue.Core
 
     public static class Utils
     {
-        extension<TKey, TValue>(IDictionary<TKey, TValue> dict)
-        {
-            public Option<TValue> GetOptional(TKey key) 
-                => dict.TryGetValue(key, out var value) 
-                    ? Option.Some(value) 
-                    : Option<TValue>.None;
-        }
-        
+        public static Option<TValue> GetOptional<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key) 
+            => dict.TryGetValue(key, out var value) 
+                ? Option.Some(value) 
+                : Option<TValue>.None;
+
         private static Result<Unit, AggregateException> SafeInvokeInternal<T>(T? self, Action<T> invoke)
             where T : Delegate
         {
@@ -56,34 +53,25 @@ namespace ue.Core
 
             return Result.Success(Unit.Instance);
         }
-        
-        extension(Action? self) 
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Result<Unit, AggregateException> SafeInvoke()
-                => SafeInvokeInternal(self, a => a());
-        }
 
-        extension<T>(Action<T>? self)
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Result<Unit, AggregateException> SafeInvoke(T arg)
-                => SafeInvokeInternal(self, a => a(arg));
-        }
-        
-        extension<T1, T2>(Action<T1, T2>? self)
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Result<Unit, AggregateException> SafeInvoke(T1 arg1, T2 arg2)
-                => SafeInvokeInternal(self, a => a(arg1, arg2));
-        }
-        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<Unit, AggregateException> SafeInvoke(this Action? self)
+            => SafeInvokeInternal(self, a => a());
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<Unit, AggregateException> SafeInvoke<T>(this Action<T>? self, T arg)
+            => SafeInvokeInternal(self, a => a(arg));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Result<Unit, AggregateException> SafeInvoke<T1, T2>(this Action<T1, T2>? self, T1 arg1, T2 arg2)
+            => SafeInvokeInternal(self, a => a(arg1, arg2));
+
         extension(SemaphoreSlim semaphore)
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public async Task<IDisposable> CreateScopeAsync() 
                 => await SemaphoreSlimGuard.CreateAsync(semaphore);
-        
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public IDisposable CreateScope()
                 => new SemaphoreSlimGuard(semaphore);
@@ -115,14 +103,14 @@ namespace ue.Core
                 using var scope = await semaphore.CreateScopeAsync();
                 return func();
             }
-        
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public async Task EnterScopeAsync(Func<Task> action)
             {
                 using var scope = await semaphore.CreateScopeAsync();
                 await action();
             }
-        
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public async Task<T> EnterScopeAsync<T>(Func<Task<T>> action)
             {
@@ -130,7 +118,7 @@ namespace ue.Core
                 return await action();
             }
         }
-        
+
         extension(Exception ex)
         {
             [DoesNotReturn]
@@ -146,7 +134,7 @@ namespace ue.Core
                 return default;
             }
         }
-        
+
         private class SemaphoreSlimGuard : IDisposable
         {
             private readonly SemaphoreSlim _semaphore;
