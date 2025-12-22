@@ -2,15 +2,103 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace ue.Core
 {
+    public interface IResult
+    {
+        /// <summary>
+        /// Returns <c>true</c> if the result is <c>Success</c>.
+        /// </summary>
+        bool IsSuccess { get; }
+        
+        /// <summary>
+        /// Returns <c>true</c> if the result is <c>Error</c>.
+        /// </summary>
+        bool IsError { get; }
+    }
+
+    public interface IResultSuccess<T> : IResult
+    {
+        /// <summary>
+        /// Converts from <see cref="Result{T, TError}">Result&lt;T, TError&gt;</see> to <see cref="Option{T}">Option&lt;T&gt;</see>.
+        /// </summary>
+        Option<T> Value { get; }
+
+        /// <summary>
+        /// Returns the contained <c>Success</c> value.
+        /// </summary>
+        T Unwrap();
+
+        /// <summary>
+        /// Maps a <see cref="Result{T,TError}">Result&lt;T, TError&gt;</see> to
+        /// <see cref="Result{TResult,TError}">Result&lt;TResult, TError&gt;</see> by applying a function to a contained
+        /// <c>Success</c> value, leaving an <c>Error</c> value untouched.
+        /// </summary>
+        IResultSuccess<TResult> Select<TResult>(Func<T, TResult> transform);
+    }
+
+    public interface IResultError<T> : IResult
+    {
+        /// <summary>
+        /// Converts from <see cref="Result{T, TError}">Result&lt;T, TError&gt;</see> to <see cref="Option{TError}">Option&lt;TError&gt;</see>.
+        /// </summary>
+        Option<T> Error { get; }
+
+        /// <summary>
+        /// Returns the contained <c>Error</c> value.
+        /// </summary>
+        T UnwrapError();
+        
+        /// <summary>
+        /// Maps a <see cref="Result{T,TError}">Result&lt;T, TError&gt;</see> to
+        /// <see cref="Result{T,TResult}">Result&lt;T, TResult&gt;</see> by applying a function to a contained
+        /// <c>Error</c> value, leaving a <c>Success</c> value untouched.
+        /// </summary>
+        IResultError<TResult> SelectError<TResult>(Func<T, TResult> transform);
+    }
+
+    public interface IResult<T, TError> : IResultSuccess<T>, IResultError<TError>
+    {
+        /// <inheritdoc cref="IResultSuccess{T}.Select" />
+        new IResult<TResult, TError> Select<TResult>(Func<T, TResult> transform);
+        
+        /// <inheritdoc cref="IResultError{TError}.SelectError" />
+        new IResult<T, TResult> SelectError<TResult>(Func<TError, TResult> transform);
+
+        IResultSuccess<TResult> IResultSuccess<T>.Select<TResult>(Func<T, TResult> transform)
+            => Select(transform);
+
+        IResultError<TResult> IResultError<TError>.SelectError<TResult>(Func<TError, TResult> transform)
+            => SelectError(transform);
+    }
+    
     public static class Result
     {
         public static PartialWithSuccess<T> Success<T>(T value) => new(value);
 
         public static PartialWithError<T> Error<T>(T error) => new(error);
+
+        extension<T>(IResult<T, T> self)
+        {
+            public T Branch() 
+                => self.IsSuccess ? self.Unwrap() : self.UnwrapError();
+        }
+        
+        extension<T, TError, TResult>(TResult self)
+            where TResult: IResult<T, TError>
+        {
+            public Result<T, TError> SafeUnbox()
+            {
+                if (self is Result<T, TError> result)
+                    return result;
+                
+                return self
+                    .Select(val => Success(val).FulfillErrorType<TError>())
+                    .SelectError(val => Error(val).FulfillSuccessType<T>())
+                    .Branch();
+            }
+        }
         
         public class PartialWithSuccess<T>
         {
@@ -58,7 +146,7 @@ namespace ue.Core
         }
     }
     
-    public abstract class Result<T, TError>
+    public abstract class Result<T, TError> : IResult<T, TError>
     {
         internal Result() {}
 
@@ -78,9 +166,12 @@ namespace ue.Core
         
         public Option<T> Value 
             => this is SuccessBranch s ? Option<T>.Some(s.Value) : Option<T>.None;
-
+        
+        /// <inheritdoc cref="IResultError{T}.Error" />
         public Option<TError> Err
             => this is ErrorBranch e ? Option<TError>.Some(e.Error) : Option<TError>.None;
+
+        Option<TError> IResultError<TError>.Error => Err;
 
         public T Unwrap() 
             => Value.Expect("Cannot unwrap a success value from an Error branch.");
@@ -88,8 +179,12 @@ namespace ue.Core
         public TError UnwrapError() 
             => Err.Expect("Cannot unwrap an error value from a Success branch.");
 
+        /// <inheritdoc cref="IResult{T,TError}.Select" />
         public abstract Result<TResult, TError> Select<TResult>(Func<T, TResult> func);
-        
+
+        IResult<TResult, TError> IResult<T, TError>.Select<TResult>(Func<T, TResult> transform)
+            => Select(transform);
+
         public abstract Result<TResult, TError> SelectMany<TResult>(Func<T, Result<TResult, TError>> func);
 
         public Result<TResult, TError> SelectMany<TMiddle, TResult>(
@@ -101,7 +196,11 @@ namespace ue.Core
                 : func(ValueUnsafe).Select(m => resultSelector(this, m));
         }
 
+        /// <inheritdoc cref="IResult{T,TError}.SelectError" />
         public abstract Result<T, TErrorResult> SelectError<TErrorResult>(Func<TError, TErrorResult> func);
+
+        IResult<T, TResult> IResult<T, TError>.SelectError<TResult>(Func<TError, TResult> transform)
+            => SelectError(transform);
 
         public abstract Result<T, TError> IfSuccess(Action<T> action);
         

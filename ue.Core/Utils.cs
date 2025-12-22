@@ -11,8 +11,14 @@ using System.Threading.Tasks;
 
 namespace ue.Core
 {
+    /// <summary>
+    /// Represents the type of computations which never resolve to any meaningful value at all.
+    /// </summary>
     public enum Never;
 
+    /// <summary>
+    /// Represents the type which has exactly one value.
+    /// </summary>
     public struct Unit
     {
         public static Unit Instance => new();

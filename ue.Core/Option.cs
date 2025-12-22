@@ -6,9 +6,72 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ue.Core
 {
+    /// <summary>
+    /// Represents an optional value.
+    /// Every <c>Option</c> is either <c>Some</c> and contains a value, or <c>None</c>, and does not.
+    /// </summary>
+    public interface IOption
+    {
+        /// <summary>
+        /// Returns <c>true</c> if the option is a <c>Some</c> value.
+        /// </summary>
+        bool IsSome { get; }
+        
+        /// <summary>
+        /// Returns <c>true</c> if the option is a <c>None</c> value.
+        /// </summary>
+        bool IsNone { get; }
+
+        IOption<T> Cast<T>();
+    }
+
+    /// <inheritdoc cref="IOption" />
+    /// <typeparam name="T">The type of the wrapped value.</typeparam>
+    public interface IOption<out T> : IOption
+    {
+        /// <summary>
+        /// Returns the contained <c>Some</c> value.
+        /// </summary>
+        T Unwrap();
+        
+        /// <summary>
+        /// Returns the contained <c>Some</c> value, throwing an exception with the provided message if the value is a
+        /// <c>None</c>.
+        /// </summary>
+        T Expect(string message);
+
+        /// <summary>
+        /// Returns the contained <c>Some</c> value, throwing a provided exception if the value is a
+        /// <c>None</c>.
+        /// </summary>
+        T Expect(Exception ex);
+        
+        /// <summary>
+        /// Returns the contained <c>Some</c> value, throwing a provided exception if the value is a
+        /// <c>None</c>.
+        /// </summary>
+        T Expect(Func<Exception> ex);
+        
+        IOption<TResult> Select<TResult>(Func<T, TResult> selector);
+        
+        IOption<TResult> SelectMany<TResult>(Func<T, IOption<TResult>> selector);
+        
+        IOption<T> Where(Func<T, bool> predicate);
+
+        IOption<TResult> IOption.Cast<TResult>() 
+            => (IOption<TResult>) this;
+    }
+    
     public static class Option
     {
+        /// <summary>
+        /// Creates a <c>Some</c> value.
+        /// </summary>
         public static Option<T> Some<T>(T value) => Option<T>.Some(value);
+        
+        /// <summary>
+        /// Returns a placeholder for creating a <c>None</c> value.
+        /// </summary>
         public static NoneValuePlaceholder None => default;
         
         public static Option<T> ToOption<T>(this T? value) where T : class
@@ -17,10 +80,69 @@ namespace ue.Core
         public static Option<T> ToOption<T>(this T? value) where T : struct
             => value == null ? Option<T>.None : Option<T>.Some(value.Value);
 
-        public struct NoneValuePlaceholder;
+        public static IOption<T> Cast<T>(this IOption self)
+            => (IOption<T>) self;
+
+        extension<TOption, TValue>(TOption self)
+            where TOption : IOption<TValue>
+        {
+            public TOption Or(TOption other) 
+                => self.IsSome ? self : other;
+        }
+
+        extension<T>(IReadOnlyList<T> self)
+        {
+            public Option<T> GetOptional(int index)
+            {
+                if (index < 0 || index >= self.Count)
+                    return None;
+
+                return Some(self[index]);
+            }
+        }
+        
+        extension<T>(IOption<T> self)
+        {
+            public T OrElse(T other)
+                => self.IsSome ? self.Unwrap() : other;
+            
+            public T OrElseGet(Func<T> other)
+                => self.IsSome ? self.Unwrap() : other();
+
+            public Option<T> SafeUnbox()
+            {
+                if (self is Option<T> result)
+                    return result;
+
+                return self
+                    .Select(Option<T>.Some)
+                    .OrElse(Option<T>.None);
+            }
+        }
+
+        extension<TFirst, TSecond>(IOption<(TFirst, TSecond)> self)
+        {
+            public (Option<TFirst> First, Option<TSecond> Second) Unzip() 
+                => self
+                    .Select(t => (Some(t.Item1), Some(t.Item2)))
+                    .OrElse((None, None));
+        }
+
+        public struct NoneValuePlaceholder
+        {
+            public Option<T> FulfillType<T>()
+                => Option<T>.None;
+
+            public IOption FulfillType(Type type)
+            {
+                var t = typeof(Option<>).MakeGenericType(type);
+                return (IOption) Activator.CreateInstance(t);
+            }
+        }
     }
     
-    public readonly struct Option<T>
+    /// <inheritdoc cref="IOption{T}" />
+    public readonly struct Option<T> : IOption<T>
     {
         public bool IsSome { get; }
         
@@ -40,7 +162,8 @@ namespace ue.Core
 
         public bool IsNone => !IsSome;
         
-        public T Unwrap() => Expect("Cannot unwrap a None value.");
+        public T Unwrap() 
+            => Expect("Cannot unwrap a None value.");
         
         public T Expect(string message) 
             => IsSome ? ValueUnsafe : throw new InvalidOperationException(message);
@@ -48,11 +171,22 @@ namespace ue.Core
         public T Expect(Exception ex) 
             => IsSome ? ValueUnsafe : ex.Rethrow<T>();
 
+        public T Expect(Func<Exception> ex)
+            => IsSome ? ValueUnsafe : ex().Rethrow<T>();
+
         public Option<TResult> Select<TResult>(Func<T, TResult> selector) 
             => IsNone ? Option<TResult>.None : Option<TResult>.Some(selector(ValueUnsafe));
 
+        IOption<TResult> IOption<T>.Select<TResult>(Func<T, TResult> selector)
+            => Select(selector);
+
         public Option<TResult> SelectMany<TResult>(Func<T, Option<TResult>> selector)
             => IsNone ? Option<TResult>.None : selector(ValueUnsafe);
+
+        IOption<TResult> IOption<T>.SelectMany<TResult>(Func<T, IOption<TResult>> selector)
+            => SelectMany<TResult>(t => selector(t)
+                .Select(Option.Some)
+                .OrElse(Option.None));
         
         public Option<TResult> SelectMany<TSelectMany, TResult>(
             Func<T, Option<TSelectMany>> selector, 
@@ -97,7 +231,10 @@ namespace ue.Core
         
         public Option<T> Where(Func<T, bool> predicate)
             => IsNone ? this : predicate(ValueUnsafe) ? this : None;
-        
+
+        IOption<T> IOption<T>.Where(Func<T, bool> predicate)
+            => Where(predicate);
+
         public T OrElse(T other)
             => IsSome ? ValueUnsafe : other;
 
@@ -106,5 +243,17 @@ namespace ue.Core
         
         public T OrElseGet(Func<T> other)
             => IsSome ? ValueUnsafe : other();
+
+        public Option<(T, TOther)> Zip<TOther>(Option<TOther> other)
+        {
+            if (IsNone || other.IsNone) return Option.None;
+            return Option.Some((ValueUnsafe, other.ValueUnsafe));
+        }
+
+        public Option<TZipped> Zip<TOther, TZipped>(Option<TOther> other, Func<T, TOther, TZipped> zip)
+        {
+            if (IsNone || other.IsNone) return Option.None;
+            return Option.Some(zip(ValueUnsafe, other.ValueUnsafe));
+        }
     }
 }
