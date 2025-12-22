@@ -9,17 +9,17 @@ namespace ue.Core.Tests
         {
             var x = Option.Some(2);
             Assert.That(x.IsSome, Is.True);
-            
+
             var y = Option<int>.None;
             Assert.That(y.IsSome, Is.False);
         }
-        
+
         [Test]
         public void TestIsNone()
         {
             var x = Option.Some(2);
             Assert.That(x.IsNone, Is.False);
-            
+
             var y = Option<int>.None;
             Assert.That(y.IsNone, Is.True);
         }
@@ -43,7 +43,7 @@ namespace ue.Core.Tests
         {
             {
                 var x = Option.Some(2);
-                var y =  Option<int>.None;
+                var y = Option<int>.None;
                 Assert.That(x.Or(y), Is.EqualTo(Option.Some(2)));
             }
 
@@ -55,7 +55,7 @@ namespace ue.Core.Tests
 
             {
                 var x = Option.Some(2);
-                var y =  Option.Some(100);
+                var y = Option.Some(100);
                 Assert.That(x.Or(y), Is.EqualTo(Option.Some(2)));
             }
 
@@ -77,7 +77,7 @@ namespace ue.Core.Tests
             }
 
             return;
-            
+
             Option<string> Nobody() => Option.None;
             Option<string> Vikings() => Option.Some("vikings");
         }
@@ -96,7 +96,7 @@ namespace ue.Core.Tests
         public void TestOrElseGet()
         {
             var k = 10;
-            
+
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(Option.Some(4).OrElseGet(() => 2 * k), Is.EqualTo(4));
@@ -113,7 +113,7 @@ namespace ue.Core.Tests
 
             var upcast = boxed.Cast<List<int>>();
             Assert.That(upcast.IsSome, Is.True);
-            
+
             var invalid = boxed.Cast<int[]>();
             Assert.That(invalid.IsSome, Is.False);
         }
@@ -137,7 +137,7 @@ namespace ue.Core.Tests
             var x = list.GetOptional(1)
                 .IfSome(i => Console.WriteLine($"got: {i}"))
                 .Expect("list should be long enough");
-            
+
             Assert.That(x, Is.EqualTo(2));
 
             // Prints nothing
@@ -182,7 +182,7 @@ namespace ue.Core.Tests
             var x = Option.Some(1);
             var y = Option.Some("hi");
             var z = Option<byte>.None;
-            
+
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(x.Zip(y), Is.EqualTo(Option.Some((1, "hi"))));
@@ -195,7 +195,7 @@ namespace ue.Core.Tests
         {
             var x = Option.Some(17.5f);
             var y = Option.Some(42.7f);
-            
+
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(x.Zip(y, New), Is.EqualTo(Option.Some(new Point(17.5f, 42.7f))));
@@ -215,7 +215,7 @@ namespace ue.Core.Tests
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(x.Unzip(), Is.EqualTo((Option.Some((byte)1), Option.Some("hi"))));
+                Assert.That(x.Unzip(), Is.EqualTo((Option.Some((byte) 1), Option.Some("hi"))));
                 Assert.That(y.Unzip(), Is.EqualTo((Option<byte>.None, Option<string>.None)));
             }
         }

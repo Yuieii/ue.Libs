@@ -16,7 +16,7 @@ namespace ue.Core.Tests
             }
         }
     }
-    
+
     public class ResultTests
     {
         [Test]

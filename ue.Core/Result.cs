@@ -13,7 +13,7 @@ namespace ue.Core
         /// Returns <c>true</c> if the result is <c>Success</c>.
         /// </summary>
         bool IsSuccess { get; }
-        
+
         /// <summary>
         /// Returns <c>true</c> if the result is <c>Error</c>.
         /// </summary>
@@ -51,7 +51,7 @@ namespace ue.Core
         /// Returns the contained <c>Error</c> value.
         /// </summary>
         T UnwrapError();
-        
+
         /// <summary>
         /// Maps a <see cref="Result{T,TError}">Result&lt;T, TError&gt;</see> to
         /// <see cref="Result{T,TResult}">Result&lt;T, TResult&gt;</see> by applying a function to a contained
@@ -64,7 +64,7 @@ namespace ue.Core
     {
         /// <inheritdoc cref="IResultSuccess{T}.Select" />
         new IResult<TResult, TError> Select<TResult>(Func<T, TResult> transform);
-        
+
         /// <inheritdoc cref="IResultError{TError}.SelectError" />
         new IResult<T, TResult> SelectError<TResult>(Func<TError, TResult> transform);
 
@@ -74,21 +74,22 @@ namespace ue.Core
         IResultError<TResult> IResultError<TError>.SelectError<TResult>(Func<TError, TResult> transform)
             => SelectError(transform);
     }
-    
+
     public static class Result
     {
         public static PartialWithSuccess<T> Success<T>(T value) => new(value);
 
         public static PartialWithError<T> Error<T>(T error) => new(error);
 
-        public static T Branch<T>(this IResult<T, T> self) 
+        public static T Branch<T>(this IResult<T, T> self)
             => self.IsSuccess ? self.Unwrap() : self.UnwrapError();
 
-        public static Result<T, TError> SafeUnbox<T, TError, TResult>(this TResult self) where TResult: IResult<T, TError>
+        public static Result<T, TError> SafeUnbox<T, TError, TResult>(this TResult self)
+            where TResult : IResult<T, TError>
         {
             if (self is Result<T, TError> result)
                 return result;
-                
+
             return self
                 .Select(val => Success(val).FulfillErrorType<TError>())
                 .SelectError(val => Error(val).FulfillSuccessType<T>())
@@ -111,7 +112,7 @@ namespace ue.Core
         public class PartialWithError<T>
         {
             private readonly T _error;
-            
+
             internal PartialWithError(T error)
             {
                 _error = error;
@@ -127,7 +128,7 @@ namespace ue.Core
             return opt.IsSome ? opt.Unwrap() : result.UnwrapError().Rethrow<T>();
         }
 
-        public static T Branch<T>(this Result<T, T> result) 
+        public static T Branch<T>(this Result<T, T> result)
             => result.IsSuccess ? result.Unwrap() : result.UnwrapError();
 
         public static T FastUnwrap<T>(this Result<T, Never> self) => self.ValueUnsafe;
@@ -137,10 +138,11 @@ namespace ue.Core
         public static Result<T, TError> Flatten<T, TError>(this Result<Result<T, TError>, TError> self)
             => self.SelectMany(s => s);
 
-        public static Result<IEnumerable<TItem>, TError> Process<TItem, TError>(this IEnumerable<Result<TItem, TError>> enumerable)
+        public static Result<IEnumerable<TItem>, TError> Process<TItem, TError>(
+            this IEnumerable<Result<TItem, TError>> enumerable)
         {
             var result = Enumerable.Empty<TItem>();
-                
+
             foreach (var res in enumerable)
             {
                 if (res.IsError)
@@ -152,12 +154,14 @@ namespace ue.Core
             return Success(result);
         }
     }
-    
-    public abstract class Result<T, TError> : 
+
+    public abstract class Result<T, TError> :
         IResult<T, TError>,
         IEquatable<Result<T, TError>>
     {
-        internal Result() {}
+        internal Result()
+        {
+        }
 
         public bool IsSuccess => this is SuccessBranch;
 
@@ -170,22 +174,22 @@ namespace ue.Core
             => partial.FulfillSuccessType<T>();
 
         internal T ValueUnsafe => ((SuccessBranch) this).Value;
-        
+
         internal TError ErrUnsafe => ((ErrorBranch) this).Error;
-        
-        public Option<T> Value 
+
+        public Option<T> Value
             => this is SuccessBranch s ? Option<T>.Some(s.Value) : Option<T>.None;
-        
+
         /// <inheritdoc cref="IResultError{T}.Error" />
         public Option<TError> Err
             => this is ErrorBranch e ? Option<TError>.Some(e.Error) : Option<TError>.None;
 
         Option<TError> IResultError<TError>.Error => Err;
 
-        public T Unwrap() 
+        public T Unwrap()
             => Value.Expect("Cannot unwrap a success value from an Error branch.");
 
-        public TError UnwrapError() 
+        public TError UnwrapError()
             => Err.Expect("Cannot unwrap an error value from a Success branch.");
 
         /// <inheritdoc cref="IResult{T,TError}.Select" />
@@ -200,8 +204,8 @@ namespace ue.Core
             Func<T, Result<TMiddle, TError>> func,
             Func<Result<T, TError>, TMiddle, TResult> resultSelector)
         {
-            return IsError 
-                ? Result.Error(ErrUnsafe) 
+            return IsError
+                ? Result.Error(ErrUnsafe)
                 : func(ValueUnsafe).Select(m => resultSelector(this, m));
         }
 
@@ -212,12 +216,12 @@ namespace ue.Core
             => SelectError(transform);
 
         public abstract Result<T, TError> IfSuccess(Action<T> action);
-        
+
         public abstract Result<T, TError> IfError(Action<TError> action);
 
-        public IEnumerable<T> AsEnumerable() 
+        public IEnumerable<T> AsEnumerable()
             => Value.AsEnumerable();
-        
+
         public bool TryUnwrap([MaybeNullWhen(false)] out T value)
         {
             if (IsSuccess)
@@ -225,7 +229,7 @@ namespace ue.Core
                 value = ValueUnsafe;
                 return true;
             }
-            
+
             value = default;
             return false;
         }
@@ -241,9 +245,9 @@ namespace ue.Core
             error = default;
             return false;
         }
-        
+
         // =========
-        
+
         public static Result<T, TError> Success(T value) => new SuccessBranch(value);
 
         public static Result<T, TError> Error(TError error) => new ErrorBranch(error);
@@ -256,7 +260,7 @@ namespace ue.Core
             {
                 Value = value;
             }
-            
+
             public override Result<TResult, TError> Select<TResult>(Func<T, TResult> func)
                 => Result.Success(func(Value));
 
@@ -274,7 +278,7 @@ namespace ue.Core
 
             public override Result<T, TError> IfError(Action<TError> action) => this;
         }
-        
+
         private class ErrorBranch : Result<T, TError>
         {
             // ReSharper disable once MemberHidesStaticFromOuterClass
@@ -307,7 +311,7 @@ namespace ue.Core
         {
             if (ReferenceEquals(other, null)) return false;
             if (IsSuccess != other.IsSuccess) return false;
-            
+
             return IsSuccess
                 ? ValueUnsafe!.Equals(other.ValueUnsafe)
                 : ErrUnsafe!.Equals(other.ErrUnsafe);
@@ -325,10 +329,10 @@ namespace ue.Core
                 : HashCode.Combine(false, ErrUnsafe!);
         }
 
-        public static bool operator ==(Result<T, TError>? left, Result<T, TError>? right) 
+        public static bool operator ==(Result<T, TError>? left, Result<T, TError>? right)
             => Equals(left, right);
 
-        public static bool operator !=(Result<T, TError>? left, Result<T, TError>? right) 
+        public static bool operator !=(Result<T, TError>? left, Result<T, TError>? right)
             => !Equals(left, right);
     }
 }

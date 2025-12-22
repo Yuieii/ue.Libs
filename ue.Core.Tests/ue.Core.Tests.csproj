@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ue.Core\ue.Core.csproj" />
+        <ProjectReference Include="..\ue.Core\ue.Core.csproj"/>
     </ItemGroup>
 
 </Project>

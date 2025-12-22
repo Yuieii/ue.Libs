@@ -9,7 +9,7 @@ namespace ue.Core
     public abstract class ScopeGuard : IDisposable
     {
         protected virtual bool ShouldEndScope => true;
-        
+
         protected abstract void EndScope();
 
         public void Dispose()
@@ -30,7 +30,7 @@ namespace ue.Core
 
         protected override void EndScope() => _endScope();
     }
-    
+
     public class SemaphoreSlimGuard : ScopeGuard
     {
         private readonly SemaphoreSlim _semaphore;
@@ -51,7 +51,7 @@ namespace ue.Core
             await semaphore.WaitAsync();
             return new SemaphoreSlimGuard(semaphore);
         }
-        
+
         protected override void EndScope() => _semaphore.Release();
     }
 }

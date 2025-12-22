@@ -26,24 +26,25 @@ namespace ue.Core
 
     public static class Utils
     {
-        public static Option<TValue> GetOptional<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key) 
-            => dict.TryGetValue(key, out var value) 
-                ? Option.Some(value) 
+        public static Option<TValue> GetOptional<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
+            => dict.TryGetValue(key, out var value)
+                ? Option.Some(value)
                 : Option<TValue>.None;
 
         private static Result<Unit, AggregateException> SafeInvokeInternal<T>(T? self, Action<T> invoke)
             where T : Delegate
         {
             if (self == null) return Result.Success(Unit.Instance);
-                
+
             var exceptions = new Lazy<List<Exception>>(() => []);
-            
+
             foreach (var action in self.GetInvocationList().Cast<T>())
             {
                 try
                 {
                     invoke(action);
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     exceptions.Value.Add(ex);
                 }
@@ -52,7 +53,7 @@ namespace ue.Core
             if (exceptions.IsValueCreated)
             {
                 return Result.Error(new AggregateException(
-                    "One or more exceptions occured while safe-invoking the delegate.", 
+                    "One or more exceptions occured while safe-invoking the delegate.",
                     exceptions.Value
                 ));
             }
@@ -75,7 +76,7 @@ namespace ue.Core
         extension(SemaphoreSlim semaphore)
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public async Task<IDisposable> CreateScopeAsync() 
+            public async Task<IDisposable> CreateScopeAsync()
                 => await SemaphoreSlimGuard.CreateAsync(semaphore);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -129,7 +130,7 @@ namespace ue.Core
         {
             [DoesNotReturn]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Never Rethrow() 
+            public Never Rethrow()
                 => Rethrow<Never>(ex);
 
             [DoesNotReturn]

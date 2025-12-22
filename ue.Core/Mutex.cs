@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright (c) 2025 Yuieii.
+
+using System;
 using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +28,7 @@ namespace ue.Core
     }
 
     public interface IMutableMutex<out T> : IMutex
-    { 
+    {
         IMutexGuard<T> AcquireExclusive();
     }
 
@@ -51,17 +53,27 @@ namespace ue.Core
     /// <typeparam name="T">The type of the value protected by the mutex.</typeparam>
     public class Mutex<T> : Mutex<T, T, T>
     {
-        public Mutex(T value) : base(value) {}
-        public Mutex(Func<T> factory) : base(factory) {}
+        public Mutex(T value) : base(value)
+        {
+        }
+
+        public Mutex(Func<T> factory) : base(factory)
+        {
+        }
     }
-    
-    public class Mutex<TValue, TImmutable, TMutable> : 
+
+    public class Mutex<TValue, TImmutable, TMutable> :
         AccessViewMutex<OpaqueView<TValue, TImmutable, TMutable>, TImmutable, TMutable>
         where TValue : TImmutable, TMutable
     {
-        public Mutex(TValue value) : base(new OpaqueView<TValue, TImmutable, TMutable>(value)) {}
-        public Mutex(Func<TValue> factory) : base(() => new OpaqueView<TValue, TImmutable, TMutable>(factory())) {}
-        
+        public Mutex(TValue value) : base(new OpaqueView<TValue, TImmutable, TMutable>(value))
+        {
+        }
+
+        public Mutex(Func<TValue> factory) : base(() => new OpaqueView<TValue, TImmutable, TMutable>(factory()))
+        {
+        }
+
         public IContainerMutexGuard<TValue> AcquireContainer()
         {
             _lock.EnterWriteLock();
@@ -72,7 +84,7 @@ namespace ue.Core
         {
             private readonly ReaderWriterLockSlim _lock;
             private readonly OpaqueView<TValue, TImmutable, TMutable> _view;
-            
+
             public ContainerMutexGuard(ReaderWriterLockSlim @lock, OpaqueView<TValue, TImmutable, TMutable> view)
             {
                 _lock = @lock;
@@ -118,7 +130,7 @@ namespace ue.Core
         /// Returns an immutable view of the underlying value.
         /// </summary>
         TImmutable AsImmutableView();
-        
+
         /// <summary>
         /// Returns a mutable view of the underlying value.
         /// </summary>
@@ -127,12 +139,12 @@ namespace ue.Core
 
     public class OpaqueView<T>(T value) : OpaqueView<T, T, T>(value);
 
-    public class OpaqueView<TValue, TImmutable, TMutable>(TValue value) : 
+    public class OpaqueView<TValue, TImmutable, TMutable>(TValue value) :
         IAccessView<TImmutable, TMutable>
         where TValue : TImmutable, TMutable
     {
         internal TValue Value { get; set; } = value;
-        
+
         public TImmutable AsImmutableView() => Value;
         public TMutable AsMutableView() => Value;
     }
@@ -143,7 +155,7 @@ namespace ue.Core
     /// <typeparam name="TView">The type representing an access view of the underlying value.</typeparam>
     /// <typeparam name="TImmutable">The type representing an immutable view of the underlying value.</typeparam>
     /// <typeparam name="TMutable">The type representing a mutable view of the underlying value.</typeparam>
-    public class AccessViewMutex<TView, TImmutable, TMutable> : 
+    public class AccessViewMutex<TView, TImmutable, TMutable> :
         IMutex<TImmutable, TMutable>,
         IAccessView<ReadOnlyMutexGuard<TImmutable>, ReadWriteMutexGuard<TMutable>>
         where TView : IAccessView<TImmutable, TMutable>
@@ -174,7 +186,7 @@ namespace ue.Core
 
         public Result<ReadOnlyMutexGuard<TImmutable>, TryLockError> TryAcquireShared()
             => TryAcquireShared(TimeSpan.Zero);
-        
+
         public Result<ReadOnlyMutexGuard<TImmutable>, TryLockError> TryAcquireShared(TimeSpan timeout)
         {
             try
@@ -196,8 +208,8 @@ namespace ue.Core
         }
 
         public Result<ReadWriteMutexGuard<TMutable>, TryLockError> TryAcquireExclusive()
-            => TryAcquireExclusive(TimeSpan.Zero); 
-        
+            => TryAcquireExclusive(TimeSpan.Zero);
+
         public Result<ReadWriteMutexGuard<TMutable>, TryLockError> TryAcquireExclusive(TimeSpan timeout)
         {
             try
@@ -217,9 +229,9 @@ namespace ue.Core
             _lock.EnterUpgradeableReadLock();
             return new UpgradableMutexGuard<TView, TImmutable, TMutable>(_lock, _value);
         }
-        
+
         #region ---- GetValueUnsafe()
-    
+
         /// <summary>
         /// Gets a direct reference to the underlying values, bypassing all view-based access restrictions.
         /// </summary>
@@ -238,24 +250,29 @@ namespace ue.Core
         /// </para>
         /// </remarks>
         public TView GetValueUnsafe() => _value;
-        
+
         #endregion
-        
-        #region ---- Implementations 
-    
+
+        #region ---- Implementations
+
         // ---------------
         // IMutex implementations
-        
+
         IMutexGuard<TImmutable> IImmutableMutex<TImmutable>.AcquireShared() => AcquireShared();
         IMutexGuard<TMutable> IMutableMutex<TMutable>.AcquireExclusive() => AcquireExclusive();
-        IUpgradableMutexGuard<TImmutable, TMutable> IMutex<TImmutable, TMutable>.AcquireUpgradable() => AcquireUpgradable();
-        
+
+        IUpgradableMutexGuard<TImmutable, TMutable> IMutex<TImmutable, TMutable>.AcquireUpgradable()
+            => AcquireUpgradable();
+
         // ---------------
         // IAccessView implementations
-        
-        ReadOnlyMutexGuard<TImmutable> IAccessView<ReadOnlyMutexGuard<TImmutable>, ReadWriteMutexGuard<TMutable>>.AsImmutableView() => AcquireShared();
-        ReadWriteMutexGuard<TMutable> IAccessView<ReadOnlyMutexGuard<TImmutable>, ReadWriteMutexGuard<TMutable>>.AsMutableView() => AcquireExclusive();
-        
+
+        ReadOnlyMutexGuard<TImmutable> IAccessView<ReadOnlyMutexGuard<TImmutable>, ReadWriteMutexGuard<TMutable>>.
+            AsImmutableView() => AcquireShared();
+
+        ReadWriteMutexGuard<TMutable> IAccessView<ReadOnlyMutexGuard<TImmutable>, ReadWriteMutexGuard<TMutable>>.
+            AsMutableView() => AcquireExclusive();
+
         #endregion
     }
 
@@ -271,13 +288,13 @@ namespace ue.Core
     {
         private readonly TView _value;
         private readonly ReaderWriterLockSlim _lock;
-    
+
         public UpgradableMutexGuard(ReaderWriterLockSlim @lock, TView value)
         {
             _lock = @lock;
             _value = value;
         }
-    
+
         public TImmutable Value => _value.AsImmutableView();
 
         public ReadWriteMutexGuard<TMutable> Upgrade() => new(_lock, _value.AsMutableView());
@@ -286,7 +303,7 @@ namespace ue.Core
         {
             _lock.ExitUpgradeableReadLock();
         }
-    
+
         // ---------------
         IMutexGuard<TMutable> IUpgradableMutexGuard<TImmutable, TMutable>.Upgrade() => Upgrade();
     }

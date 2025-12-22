@@ -16,7 +16,7 @@ namespace ue.Core
         /// Returns <c>true</c> if the option is a <c>Some</c> value.
         /// </summary>
         bool IsSome { get; }
-        
+
         /// <summary>
         /// Returns <c>true</c> if the option is a <see cref="Option{T}.None">None</see> value.
         /// </summary>
@@ -33,7 +33,7 @@ namespace ue.Core
         /// Returns the contained <c>Some</c> value.
         /// </summary>
         T Unwrap();
-        
+
         /// <summary>
         /// Returns the contained <c>Some</c> value, throwing an exception with the provided message if the value is a
         /// <see cref="Option{T}.None">None</see>.
@@ -45,35 +45,35 @@ namespace ue.Core
         /// <see cref="Option{T}.None">None</see>.
         /// </summary>
         T Expect(Exception ex);
-        
+
         /// <summary>
         /// Returns the contained <c>Some</c> value, throwing a provided exception if the value is a
         /// <see cref="Option{T}.None">None</see>.
         /// </summary>
         T Expect(Func<Exception> ex);
-        
+
         IOption<TResult> Select<TResult>(Func<T, TResult> selector);
-        
+
         IOption<TResult> SelectMany<TResult>(Func<T, IOption<TResult>> selector);
-        
+
         IOption<T> Where(Func<T, bool> predicate);
 
-        IOption<TResult> IOption.Cast<TResult>() 
+        IOption<TResult> IOption.Cast<TResult>()
             => (IOption<TResult>) this;
     }
-    
+
     public static class Option
     {
         /// <summary>
         /// Creates a <c>Some</c> value.
         /// </summary>
         public static Option<T> Some<T>(T value) => Option<T>.Some(value);
-        
+
         /// <summary>
         /// Returns a placeholder for creating a <see cref="Option{T}.None">None</see> value.
         /// </summary>
         public static NoneValuePlaceholder None => default;
-        
+
         public static Option<T> ToOption<T>(this T? value) where T : class
             => value == null ? Option<T>.None : Option<T>.Some(value);
 
@@ -83,7 +83,8 @@ namespace ue.Core
         public static IOption<T> Cast<T>(this IOption self)
             => (IOption<T>) self;
 
-        public static TOption Or<TOption, TValue>(this TOption self, TOption other) where TOption : IOption<TValue> => self.IsSome ? self : other;
+        public static TOption Or<TOption, TValue>(this TOption self, TOption other) where TOption : IOption<TValue>
+            => self.IsSome ? self : other;
 
         public static Option<T> GetOptional<T>(this IReadOnlyList<T> self, int index)
         {
@@ -97,7 +98,7 @@ namespace ue.Core
         {
             public T OrElse(T other)
                 => self.IsSome ? self.Unwrap() : other;
-            
+
             public T OrElseGet(Func<T> other)
                 => self.IsSome ? self.Unwrap() : other();
 
@@ -114,7 +115,7 @@ namespace ue.Core
 
         extension<TFirst, TSecond>(IOption<(TFirst, TSecond)> self)
         {
-            public (Option<TFirst> First, Option<TSecond> Second) Unzip() 
+            public (Option<TFirst> First, Option<TSecond> Second) Unzip()
                 => self
                     .Select(t => (Some(t.Item1), Some(t.Item2)))
                     .OrElse((None, None));
@@ -132,7 +133,7 @@ namespace ue.Core
             }
         }
     }
-    
+
     /// <inheritdoc cref="IOption{T}" />
     public readonly struct Option<T> : IOption<T>
     {
@@ -160,20 +161,20 @@ namespace ue.Core
         public static Option<T> None => default;
 
         public bool IsNone => !IsSome;
-        
-        public T Unwrap() 
+
+        public T Unwrap()
             => Expect("Cannot unwrap a None value.");
-        
-        public T Expect(string message) 
+
+        public T Expect(string message)
             => IsSome ? ValueUnsafe : throw new InvalidOperationException(message);
 
-        public T Expect(Exception ex) 
+        public T Expect(Exception ex)
             => IsSome ? ValueUnsafe : ex.Rethrow<T>();
 
         public T Expect(Func<Exception> ex)
             => IsSome ? ValueUnsafe : ex().Rethrow<T>();
 
-        public Option<TResult> Select<TResult>(Func<T, TResult> selector) 
+        public Option<TResult> Select<TResult>(Func<T, TResult> selector)
             => IsSome
                 ? Option<TResult>.Some(selector(ValueUnsafe))
                 : Option<TResult>.None;
@@ -182,17 +183,17 @@ namespace ue.Core
             => Select(selector);
 
         public Option<TResult> SelectMany<TResult>(Func<T, Option<TResult>> selector)
-            => IsSome 
-                ? selector(ValueUnsafe) 
+            => IsSome
+                ? selector(ValueUnsafe)
                 : Option<TResult>.None;
 
         IOption<TResult> IOption<T>.SelectMany<TResult>(Func<T, IOption<TResult>> selector)
             => SelectMany<TResult>(t => selector(t)
                 .Select(Option.Some)
                 .OrElse(Option.None));
-        
+
         public Option<TResult> SelectMany<TSelectMany, TResult>(
-            Func<T, Option<TSelectMany>> selector, 
+            Func<T, Option<TSelectMany>> selector,
             Func<Option<T>, TSelectMany, TResult> resultSelector)
         {
             var val = ValueUnsafe;
@@ -237,7 +238,7 @@ namespace ue.Core
 
         public Option<T> Or(Option<T> other)
             => IsSome ? this : other;
-        
+
         public Option<T> Where(Func<T, bool> predicate)
             => !IsSome ? this : predicate(ValueUnsafe) ? this : None;
 
@@ -249,11 +250,11 @@ namespace ue.Core
 
         public Option<T> OrGet(Func<Option<T>> other)
             => IsSome ? this : other();
-        
+
         public T OrElseGet(Func<T> other)
             => IsSome ? ValueUnsafe : other();
 
-        public Option<TOut> CastOrThrow<TOut>() 
+        public Option<TOut> CastOrThrow<TOut>()
             => IsSome
                 ? Option.Some((TOut) (object) ValueUnsafe!)
                 : Option<TOut>.None;
@@ -261,9 +262,9 @@ namespace ue.Core
         public Option<TOut> Cast<TOut>()
         {
             if (!IsSome) return Option<TOut>.None;
-            
-            return ValueUnsafe is TOut result 
-                ? Option.Some(result) 
+
+            return ValueUnsafe is TOut result
+                ? Option.Some(result)
                 : Option.None;
         }
 
@@ -280,7 +281,7 @@ namespace ue.Core
 
             return IsSome ? this : other;
         }
-        
+
         public Option<(T, TOther)> Zip<TOther>(Option<TOther> other)
         {
             if (!IsSome || !other.IsSome) return Option.None;

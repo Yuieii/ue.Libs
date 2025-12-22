@@ -25,7 +25,7 @@ namespace ue.Core
                     return self & 0x3f;
                 }
             }
-            
+
             /// <inheritdoc cref="BitCount"/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int GetBitCount() => self.BitCount;

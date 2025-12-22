@@ -14,7 +14,7 @@ namespace ue.Core
         {
             _parent = parent;
         }
-        
+
         public DependencyContainer(DependencyContainer? parent)
         {
             _parent = parent.ToOption();
@@ -25,17 +25,17 @@ namespace ue.Core
 
         public bool HasService<T>()
             => _dependencies.ContainsKey(typeof(T));
-        
+
         public bool HasService(Type type)
             => _dependencies.ContainsKey(type);
-        
+
         public void Register(Type type, object dependency)
         {
             if (dependency == null)
             {
-                throw new ArgumentException("Dependency cannot be null.", nameof(dependency));                
+                throw new ArgumentException("Dependency cannot be null.", nameof(dependency));
             }
-            
+
             if (_parent
                     .Select(o => o.HasService(type))
                     .OrElse(false) || !_dependencies.TryAdd(type, dependency))
@@ -45,22 +45,22 @@ namespace ue.Core
         }
 
         public Option<T> TryGet<T>()
-            => TryGet(typeof(T)).Cast<T>(); 
-        
+            => TryGet(typeof(T)).Cast<T>();
+
         public Option<object> TryGet(Type type)
         {
             if (_dependencies.TryGetValue(type, out var result))
                 return Option.Some(result);
-            
+
             return _parent
                 .Select(o => o.Get(type));
         }
-        
-        public T Get<T>() 
+
+        public T Get<T>()
             => TryGet<T>()
                 .Expect(() => CreateNotRegisteredException(typeof(T)));
-        
-        public object Get(Type type) 
+
+        public object Get(Type type)
             => TryGet(type)
                 .Expect(() => CreateNotRegisteredException(type));
 

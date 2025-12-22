@@ -30,7 +30,7 @@ namespace ue.Core.Tests
                 l.Value = 2;
                 Assert.That(l.Value, Is.EqualTo(2));
             }
-            
+
             using (var l = mutex.AcquireShared())
             {
                 Assert.That(l.Value, Is.EqualTo(2));
@@ -43,24 +43,24 @@ namespace ue.Core.Tests
             var mutex = new Mutex<int>(1);
             using var l = mutex.AcquireContainer();
             l.Value = 2;
-            
+
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(l.Value, Is.EqualTo(2));
                 Assert.That(mutex.TryAcquireShared().IsError, Is.True);
             }
         }
-        
+
         [Test]
         public void TestTryAcquireExclusive()
         {
             var mutex = new Mutex<int>(1);
             using var l = mutex.AcquireShared();
-            
+
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(l.Value, Is.EqualTo(1));
-                Assert.That(mutex.TryAcquireExclusive().IsError, Is.True);    
+                Assert.That(mutex.TryAcquireExclusive().IsError, Is.True);
             }
         }
 
