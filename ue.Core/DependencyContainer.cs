@@ -15,7 +15,7 @@ namespace ue.Core
             _parent = parent;
         }
         
-        public DependencyContainer(DependencyContainer? parent = null)
+        public DependencyContainer(DependencyContainer? parent)
         {
             _parent = parent.ToOption();
         }
@@ -44,16 +44,27 @@ namespace ue.Core
             }
         }
 
-        public T Get<T>() => (T) Get(typeof(T));
-
-        public object Get(Type type)
+        public Option<T> TryGet<T>()
+            => TryGet(typeof(T)).Cast<T>(); 
+        
+        public Option<object> TryGet(Type type)
         {
             if (_dependencies.TryGetValue(type, out var result))
-                return result;
+                return Option.Some(result);
             
             return _parent
-                .Select(o => o.Get(type))
-                .Expect(new ArgumentException($"The dependency of type {type.FullName} is not registered."));
+                .Select(o => o.Get(type));
         }
+        
+        public T Get<T>() 
+            => TryGet<T>()
+                .Expect(() => CreateNotRegisteredException(typeof(T)));
+        
+        public object Get(Type type) 
+            => TryGet(type)
+                .Expect(() => CreateNotRegisteredException(type));
+
+        private Exception CreateNotRegisteredException(Type type)
+            => new ArgumentException($"The dependency of type {type.FullName} is not registered.");
     }
 }

@@ -174,13 +174,17 @@ namespace ue.Core
             => IsSome ? ValueUnsafe : ex().Rethrow<T>();
 
         public Option<TResult> Select<TResult>(Func<T, TResult> selector) 
-            => IsNone ? Option<TResult>.None : Option<TResult>.Some(selector(ValueUnsafe));
+            => IsSome
+                ? Option<TResult>.Some(selector(ValueUnsafe))
+                : Option<TResult>.None;
 
         IOption<TResult> IOption<T>.Select<TResult>(Func<T, TResult> selector)
             => Select(selector);
 
         public Option<TResult> SelectMany<TResult>(Func<T, Option<TResult>> selector)
-            => IsNone ? Option<TResult>.None : selector(ValueUnsafe);
+            => IsSome 
+                ? selector(ValueUnsafe) 
+                : Option<TResult>.None;
 
         IOption<TResult> IOption<T>.SelectMany<TResult>(Func<T, IOption<TResult>> selector)
             => SelectMany<TResult>(t => selector(t)
@@ -193,9 +197,9 @@ namespace ue.Core
         {
             var val = ValueUnsafe;
             var self = this;
-            return IsNone
-                ? Option<TResult>.None
-                : selector(val).Select(v => resultSelector(self, v));
+            return IsSome
+                ? selector(val).Select(v => resultSelector(self, v))
+                : Option<TResult>.None;
         }
 
         public Option<T> IfSome(Action<T> action)
@@ -206,7 +210,7 @@ namespace ue.Core
 
         public Option<T> IfNone(Action action)
         {
-            if (IsNone) action();
+            if (!IsSome) action();
             return this;
         }
 
@@ -214,15 +218,17 @@ namespace ue.Core
         [SuppressMessage("ReSharper", "ParameterHidesMember")]
         public Option<T> Match(Action? None = null, Action<T>? Some = null)
         {
-            if (IsNone) None?.Invoke();
             if (IsSome) Some?.Invoke(ValueUnsafe);
+            else None?.Invoke();
             return this;
         }
 
         public IEnumerable<T> AsEnumerable()
         {
-            if (IsNone) yield break; 
-            yield return ValueUnsafe;
+            if (IsSome)
+            {
+                yield return ValueUnsafe;
+            }
         }
 
         public Result<T, TError> ToSuccessOr<TError>(TError error)
@@ -233,7 +239,7 @@ namespace ue.Core
             => IsSome ? this : other;
         
         public Option<T> Where(Func<T, bool> predicate)
-            => IsNone ? this : predicate(ValueUnsafe) ? this : None;
+            => !IsSome ? this : predicate(ValueUnsafe) ? this : None;
 
         IOption<T> IOption<T>.Where(Func<T, bool> predicate)
             => Where(predicate);
@@ -246,6 +252,20 @@ namespace ue.Core
         
         public T OrElseGet(Func<T> other)
             => IsSome ? ValueUnsafe : other();
+
+        public Option<TOut> CastOrThrow<TOut>() 
+            => IsSome
+                ? Option.Some((TOut) (object) ValueUnsafe!)
+                : Option<TOut>.None;
+
+        public Option<TOut> Cast<TOut>()
+        {
+            if (!IsSome) return Option<TOut>.None;
+            
+            return ValueUnsafe is TOut result 
+                ? Option.Some(result) 
+                : Option.None;
+        }
 
         /// <summary>
         /// Returns <c>Some</c> if exactly one of this option or <paramref name="other"/> is <c>Some</c>, otherwise
@@ -263,13 +283,13 @@ namespace ue.Core
         
         public Option<(T, TOther)> Zip<TOther>(Option<TOther> other)
         {
-            if (IsNone || other.IsNone) return Option.None;
+            if (!IsSome || !other.IsSome) return Option.None;
             return Option.Some((ValueUnsafe, other.ValueUnsafe));
         }
 
         public Option<TZipped> Zip<TOther, TZipped>(Option<TOther> other, Func<T, TOther, TZipped> zip)
         {
-            if (IsNone || other.IsNone) return Option.None;
+            if (!IsSome || !other.IsSome) return Option.None;
             return Option.Some(zip(ValueUnsafe, other.ValueUnsafe));
         }
     }

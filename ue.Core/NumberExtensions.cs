@@ -1,5 +1,7 @@
 ﻿// Copyright (c) 2025 Yuieii.
 
+using System.Runtime.CompilerServices;
+
 namespace ue.Core
 {
     public static class NumberExtensions
@@ -9,7 +11,7 @@ namespace ue.Core
             /// <summary>
             /// Returns the number of one-bits in the two-complement binary representation of the specified
             /// <see cref="int"/> value.
-            /// This function is sometimes referred to as the population count.
+            /// This is sometimes referred to as the population count.
             /// </summary>
             public int BitCount
             {
@@ -23,6 +25,10 @@ namespace ue.Core
                     return self & 0x3f;
                 }
             }
+            
+            /// <inheritdoc cref="BitCount"/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetBitCount() => self.BitCount;
         }
     }
 }

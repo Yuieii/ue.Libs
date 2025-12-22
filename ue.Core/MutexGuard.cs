@@ -33,7 +33,7 @@ namespace ue.Core
         IMutexGuard<TMutable> Upgrade();
     }
     
-    public sealed class MappedMutexGuard<T, TOut> : IMutexGuard<TOut>
+    public sealed class MappedMutexGuard<T, TOut> : ScopeGuard, IMutexGuard<TOut>
     {
         private readonly IMutexGuard<T> _inner;
         private readonly Func<T, TOut> _transform;
@@ -46,10 +46,13 @@ namespace ue.Core
 
         public TOut Value => _transform(_inner.Value);
 
-        public void Dispose() => _inner.Dispose();
+        protected override void EndScope()
+        {
+            _inner.Dispose();
+        }
     }
 
-    public sealed class ReadWriteMutexGuard<TMutable> : IMutexGuard<TMutable>
+    public sealed class ReadWriteMutexGuard<TMutable> : ScopeGuard, IMutexGuard<TMutable>
     {
         private readonly TMutable _value;
         private readonly ReaderWriterLockSlim _lock;
@@ -62,13 +65,13 @@ namespace ue.Core
     
         public TMutable Value => _value;
 
-        public void Dispose()
+        protected override void EndScope()
         {
             _lock.ExitWriteLock();
         }
     }
     
-    public sealed class ReadOnlyMutexGuard<TImmutable> : IMutexGuard<TImmutable>
+    public sealed class ReadOnlyMutexGuard<TImmutable> : ScopeGuard, IMutexGuard<TImmutable>
     {
         private readonly TImmutable _value;
         private readonly ReaderWriterLockSlim _lock;
@@ -80,8 +83,8 @@ namespace ue.Core
         }
     
         public TImmutable Value => _value;
-    
-        public void Dispose()
+
+        protected override void EndScope()
         {
             _lock.ExitReadLock();
         }

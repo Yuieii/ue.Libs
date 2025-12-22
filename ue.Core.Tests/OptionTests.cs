@@ -76,6 +76,8 @@ namespace ue.Core.Tests
                 Assert.That(Option<string>.None.OrGet(Nobody), Is.EqualTo(Option<string>.None));
             }
 
+            return;
+            
             Option<string> Nobody() => Option.None;
             Option<string> Vikings() => Option.Some("vikings");
         }
@@ -100,6 +102,20 @@ namespace ue.Core.Tests
                 Assert.That(Option.Some(4).OrElseGet(() => 2 * k), Is.EqualTo(4));
                 Assert.That(Option<int>.None.OrElseGet(() => 2 * k), Is.EqualTo(20));
             }
+        }
+
+        [Test]
+        public void TestCast()
+        {
+            var list = Option.Some(new List<int> { 1, 2, 3 });
+            var boxed = list.Cast<IReadOnlyList<int>>();
+            Assert.That(boxed.IsSome, Is.True);
+
+            var upcast = boxed.Cast<List<int>>();
+            Assert.That(upcast.IsSome, Is.True);
+            
+            var invalid = boxed.Cast<int[]>();
+            Assert.That(invalid.IsSome, Is.False);
         }
 
         [Test]
@@ -185,6 +201,8 @@ namespace ue.Core.Tests
                 Assert.That(x.Zip(y, New), Is.EqualTo(Option.Some(new Point(17.5f, 42.7f))));
                 Assert.That(x.Zip(Option<float>.None, New), Is.EqualTo(Option<Point>.None));
             }
+
+            return;
 
             Point New(float a, float b) => new(a, b);
         }

@@ -80,7 +80,7 @@ namespace ue.Core
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public IDisposable CreateScope()
-                => new SemaphoreSlimGuard(semaphore);
+                => SemaphoreSlimGuard.Create(semaphore);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void EnterScope(Action action)
@@ -139,27 +139,6 @@ namespace ue.Core
                 ExceptionDispatchInfo.Capture(ex).Throw();
                 return default;
             }
-        }
-
-        private class SemaphoreSlimGuard : IDisposable
-        {
-            private readonly SemaphoreSlim _semaphore;
-
-            public SemaphoreSlimGuard(SemaphoreSlim semaphore, bool wait = true)
-            {
-                _semaphore = semaphore;
-                if (wait) semaphore.Wait();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static async Task<SemaphoreSlimGuard> CreateAsync(SemaphoreSlim semaphore)
-            {
-                await semaphore.WaitAsync();
-                return new SemaphoreSlimGuard(semaphore, false);
-            }
-
-            public void Dispose()
-                => _semaphore.Release();
         }
     }
 }

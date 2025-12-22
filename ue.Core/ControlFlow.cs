@@ -93,7 +93,7 @@ namespace ue.Core
 
         private class BreakBranch : ControlFlow<TBreak, TContinue>
         {
-            private TBreak _value;
+            private readonly TBreak _value;
 
             public override bool IsBreak => true;
             public override bool IsContinue => false;
@@ -124,7 +124,7 @@ namespace ue.Core
 
         private class ContinueBranch : ControlFlow<TBreak, TContinue>
         {
-            private TContinue _value;
+            private readonly TContinue _value;
             
             public override bool IsBreak => false;
             public override bool IsContinue => true;

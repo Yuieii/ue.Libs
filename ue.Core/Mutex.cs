@@ -68,7 +68,7 @@ namespace ue.Core
             return new ContainerMutexGuard(_lock, _value);
         }
 
-        private class ContainerMutexGuard : IContainerMutexGuard<TValue>
+        private class ContainerMutexGuard : ScopeGuard, IContainerMutexGuard<TValue>
         {
             private readonly ReaderWriterLockSlim _lock;
             private readonly OpaqueView<TValue, TImmutable, TMutable> _view;
@@ -85,7 +85,7 @@ namespace ue.Core
                 set => _view.Value = value;
             }
 
-            public void Dispose()
+            protected override void EndScope()
             {
                 _lock.ExitWriteLock();
             }
@@ -264,7 +264,9 @@ namespace ue.Core
         WouldBlock
     }
 
-    public sealed class UpgradableMutexGuard<TView, TImmutable, TMutable> : IUpgradableMutexGuard<TImmutable, TMutable>
+    public sealed class UpgradableMutexGuard<TView, TImmutable, TMutable> :
+        ScopeGuard,
+        IUpgradableMutexGuard<TImmutable, TMutable>
         where TView : IAccessView<TImmutable, TMutable>
     {
         private readonly TView _value;
@@ -280,7 +282,7 @@ namespace ue.Core
 
         public ReadWriteMutexGuard<TMutable> Upgrade() => new(_lock, _value.AsMutableView());
 
-        public void Dispose()
+        protected override void EndScope()
         {
             _lock.ExitUpgradeableReadLock();
         }
