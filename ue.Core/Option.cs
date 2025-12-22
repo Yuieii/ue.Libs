@@ -8,7 +8,7 @@ namespace ue.Core
 {
     /// <summary>
     /// Represents an optional value.
-    /// Every <c>Option</c> is either <c>Some</c> and contains a value, or <c>None</c>, and does not.
+    /// Every <c>Option</c> is either <c>Some</c> and contains a value, or <see cref="Option{T}.None">None</see>, and does not.
     /// </summary>
     public interface IOption
     {
@@ -18,7 +18,7 @@ namespace ue.Core
         bool IsSome { get; }
         
         /// <summary>
-        /// Returns <c>true</c> if the option is a <c>None</c> value.
+        /// Returns <c>true</c> if the option is a <see cref="Option{T}.None">None</see> value.
         /// </summary>
         bool IsNone { get; }
 
@@ -36,19 +36,19 @@ namespace ue.Core
         
         /// <summary>
         /// Returns the contained <c>Some</c> value, throwing an exception with the provided message if the value is a
-        /// <c>None</c>.
+        /// <see cref="Option{T}.None">None</see>.
         /// </summary>
         T Expect(string message);
 
         /// <summary>
         /// Returns the contained <c>Some</c> value, throwing a provided exception if the value is a
-        /// <c>None</c>.
+        /// <see cref="Option{T}.None">None</see>.
         /// </summary>
         T Expect(Exception ex);
         
         /// <summary>
         /// Returns the contained <c>Some</c> value, throwing a provided exception if the value is a
-        /// <c>None</c>.
+        /// <see cref="Option{T}.None">None</see>.
         /// </summary>
         T Expect(Func<Exception> ex);
         
@@ -70,7 +70,7 @@ namespace ue.Core
         public static Option<T> Some<T>(T value) => Option<T>.Some(value);
         
         /// <summary>
-        /// Returns a placeholder for creating a <c>None</c> value.
+        /// Returns a placeholder for creating a <see cref="Option{T}.None">None</see> value.
         /// </summary>
         public static NoneValuePlaceholder None => default;
         
@@ -83,24 +83,16 @@ namespace ue.Core
         public static IOption<T> Cast<T>(this IOption self)
             => (IOption<T>) self;
 
-        extension<TOption, TValue>(TOption self)
-            where TOption : IOption<TValue>
+        public static TOption Or<TOption, TValue>(this TOption self, TOption other) where TOption : IOption<TValue> => self.IsSome ? self : other;
+
+        public static Option<T> GetOptional<T>(this IReadOnlyList<T> self, int index)
         {
-            public TOption Or(TOption other) 
-                => self.IsSome ? self : other;
+            if (index < 0 || index >= self.Count)
+                return None;
+
+            return Some(self[index]);
         }
 
-        extension<T>(IReadOnlyList<T> self)
-        {
-            public Option<T> GetOptional(int index)
-            {
-                if (index < 0 || index >= self.Count)
-                    return None;
-
-                return Some(self[index]);
-            }
-        }
-        
         extension<T>(IOption<T> self)
         {
             public T OrElse(T other)
@@ -145,10 +137,10 @@ namespace ue.Core
     public readonly struct Option<T> : IOption<T>
     {
         public bool IsSome { get; }
-        
-        internal T ValueUnsafe { get; }
-        
-        internal Option(T value)
+
+        private T ValueUnsafe { get; }
+
+        private Option(T value)
         {
             IsSome = true;
             ValueUnsafe = value;
@@ -156,8 +148,15 @@ namespace ue.Core
 
         public static implicit operator Option<T>(Option.NoneValuePlaceholder _) => None;
 
+        /// <summary>
+        /// Represents some value of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="value">The value of type <typeparamref name="T"/>.</param>
         public static Option<T> Some(T value) => new(value);
 
+        /// <summary>
+        /// Represents no value.
+        /// </summary>
         public static Option<T> None => default;
 
         public bool IsNone => !IsSome;
@@ -226,6 +225,10 @@ namespace ue.Core
             yield return ValueUnsafe;
         }
 
+        public Result<T, TError> ToSuccessOr<TError>(TError error)
+            => Select<Result<T, TError>>(x => Result.Success(x))
+                .OrElseGet(() => Result.Error(error));
+
         public Option<T> Or(Option<T> other)
             => IsSome ? this : other;
         
@@ -244,6 +247,20 @@ namespace ue.Core
         public T OrElseGet(Func<T> other)
             => IsSome ? ValueUnsafe : other();
 
+        /// <summary>
+        /// Returns <c>Some</c> if exactly one of this option or <paramref name="other"/> is <c>Some</c>, otherwise
+        /// returns <see cref="None"/>.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public Option<T> Xor(Option<T> other)
+        {
+            if (IsSome == other.IsSome)
+                return Option.None;
+
+            return IsSome ? this : other;
+        }
+        
         public Option<(T, TOther)> Zip<TOther>(Option<TOther> other)
         {
             if (IsNone || other.IsNone) return Option.None;

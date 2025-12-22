@@ -63,5 +63,19 @@ namespace ue.Core.Tests
                 Assert.That(mutex.TryAcquireExclusive().IsError, Is.True);    
             }
         }
+
+        [Test]
+        public void TestSelect()
+        {
+            var mutex = new Mutex<int>(1);
+            using var l = mutex.AcquireShared()
+                .Select(x => x * 2);
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(l.Value, Is.EqualTo(2));
+                Assert.That(mutex.TryAcquireExclusive().IsError, Is.True);
+            }
+        }
     }
 }

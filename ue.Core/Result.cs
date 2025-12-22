@@ -1,7 +1,9 @@
 ﻿// Copyright (c) 2025 Yuieii.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace ue.Core
 {
@@ -79,27 +81,20 @@ namespace ue.Core
 
         public static PartialWithError<T> Error<T>(T error) => new(error);
 
-        extension<T>(IResult<T, T> self)
+        public static T Branch<T>(this IResult<T, T> self) 
+            => self.IsSuccess ? self.Unwrap() : self.UnwrapError();
+
+        public static Result<T, TError> SafeUnbox<T, TError, TResult>(this TResult self) where TResult: IResult<T, TError>
         {
-            public T Branch() 
-                => self.IsSuccess ? self.Unwrap() : self.UnwrapError();
-        }
-        
-        extension<T, TError, TResult>(TResult self)
-            where TResult: IResult<T, TError>
-        {
-            public Result<T, TError> SafeUnbox()
-            {
-                if (self is Result<T, TError> result)
-                    return result;
+            if (self is Result<T, TError> result)
+                return result;
                 
-                return self
-                    .Select(val => Success(val).FulfillErrorType<TError>())
-                    .SelectError(val => Error(val).FulfillSuccessType<T>())
-                    .Branch();
-            }
+            return self
+                .Select(val => Success(val).FulfillErrorType<TError>())
+                .SelectError(val => Error(val).FulfillSuccessType<T>())
+                .Branch();
         }
-        
+
         public class PartialWithSuccess<T>
         {
             private readonly T _value;
@@ -135,18 +130,32 @@ namespace ue.Core
         public static T Branch<T>(this Result<T, T> result) 
             => result.IsSuccess ? result.Unwrap() : result.UnwrapError();
 
-        extension<T>(Result<T, Never> self)
+        public static T FastUnwrap<T>(this Result<T, Never> self) => self.ValueUnsafe;
+
+        public static T FastUnwrapError<T>(this Result<Never, T> self) => self.ErrUnsafe;
+
+        public static Result<T, TError> Flatten<T, TError>(this Result<Result<T, TError>, TError> self)
+            => self.SelectMany(s => s);
+
+        public static Result<IEnumerable<TItem>, TError> Process<TItem, TError>(this IEnumerable<Result<TItem, TError>> enumerable)
         {
-            public T FastUnwrap() => self.ValueUnsafe;
-        }
-        
-        extension<T>(Result<Never, T> self)
-        {
-            public T FastUnwrapError() => self.ErrUnsafe;
+            var result = Enumerable.Empty<TItem>();
+                
+            foreach (var res in enumerable)
+            {
+                if (res.IsError)
+                    return Error(res.UnwrapError());
+
+                result = result.Append(res.Unwrap());
+            }
+
+            return Success(result);
         }
     }
     
-    public abstract class Result<T, TError> : IResult<T, TError>
+    public abstract class Result<T, TError> : 
+        IResult<T, TError>,
+        IEquatable<Result<T, TError>>
     {
         internal Result() {}
 
@@ -205,6 +214,9 @@ namespace ue.Core
         public abstract Result<T, TError> IfSuccess(Action<T> action);
         
         public abstract Result<T, TError> IfError(Action<TError> action);
+
+        public IEnumerable<T> AsEnumerable() 
+            => Value.AsEnumerable();
         
         public bool TryUnwrap([MaybeNullWhen(false)] out T value)
         {
@@ -290,5 +302,33 @@ namespace ue.Core
                 return this;
             }
         }
+
+        public bool Equals(Result<T, TError>? other)
+        {
+            if (ReferenceEquals(other, null)) return false;
+            if (IsSuccess != other.IsSuccess) return false;
+            
+            return IsSuccess
+                ? ValueUnsafe!.Equals(other.ValueUnsafe)
+                : ErrUnsafe!.Equals(other.ErrUnsafe);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return ReferenceEquals(this, obj) || obj is Result<T, TError> other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return IsSuccess
+                ? HashCode.Combine(true, ValueUnsafe!)
+                : HashCode.Combine(false, ErrUnsafe!);
+        }
+
+        public static bool operator ==(Result<T, TError>? left, Result<T, TError>? right) 
+            => Equals(left, right);
+
+        public static bool operator !=(Result<T, TError>? left, Result<T, TError>? right) 
+            => !Equals(left, right);
     }
 }

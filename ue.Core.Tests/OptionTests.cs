@@ -39,6 +39,48 @@ namespace ue.Core.Tests
         }
 
         [Test]
+        public void TestOr()
+        {
+            {
+                var x = Option.Some(2);
+                var y =  Option<int>.None;
+                Assert.That(x.Or(y), Is.EqualTo(Option.Some(2)));
+            }
+
+            {
+                var x = Option<int>.None;
+                var y = Option.Some(100);
+                Assert.That(x.Or(y), Is.EqualTo(Option.Some(100)));
+            }
+
+            {
+                var x = Option.Some(2);
+                var y =  Option.Some(100);
+                Assert.That(x.Or(y), Is.EqualTo(Option.Some(2)));
+            }
+
+            {
+                var x = Option<int>.None;
+                var y = Option<int>.None;
+                Assert.That(x.Or(y), Is.EqualTo(Option<int>.None));
+            }
+        }
+
+        [Test]
+        public void TestOrGet()
+        {
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(Option.Some("barbarians").OrGet(Vikings), Is.EqualTo(Option.Some("barbarians")));
+                Assert.That(Option<string>.None.OrGet(Vikings), Is.EqualTo(Option.Some("vikings")));
+                Assert.That(Option<string>.None.OrGet(Nobody), Is.EqualTo(Option<string>.None));
+            }
+
+            Option<string> Nobody() => Option.None;
+            Option<string> Vikings() => Option.Some("vikings");
+        }
+
+        [Test]
         public void TestOrElse()
         {
             using (Assert.EnterMultipleScope())
@@ -88,6 +130,34 @@ namespace ue.Core.Tests
                 list.GetOptional(5)
                     .IfSome(i => throw new InvalidOperationException());
             });
+        }
+
+        [Test]
+        public void TestXor()
+        {
+            {
+                var x = Option.Some(2);
+                var y = Option<int>.None;
+                Assert.That(x.Xor(y), Is.EqualTo(Option.Some(2)));
+            }
+
+            {
+                var x = Option<int>.None;
+                var y = Option.Some(100);
+                Assert.That(x.Xor(y), Is.EqualTo(Option.Some(100)));
+            }
+
+            {
+                var x = Option.Some(2);
+                var y = Option.Some(100);
+                Assert.That(x.Xor(y), Is.EqualTo(Option<int>.None));
+            }
+
+            {
+                var x = Option<int>.None;
+                var y = Option<int>.None;
+                Assert.That(x.Xor(y), Is.EqualTo(Option<int>.None));
+            }
         }
 
         [Test]
