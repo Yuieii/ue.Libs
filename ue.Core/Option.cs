@@ -57,9 +57,6 @@ namespace ue.Core
         IOption<TResult> SelectMany<TResult>(Func<T, IOption<TResult>> selector);
 
         IOption<T> Where(Func<T, bool> predicate);
-
-        IOption<TResult> IOption.Cast<TResult>()
-            => (IOption<TResult>) this;
     }
 
     public static class Option
@@ -267,6 +264,9 @@ namespace ue.Core
                 ? Option.Some(result)
                 : Option.None;
         }
+
+        IOption<TOut> IOption.Cast<TOut>()
+            => Cast<TOut>();
 
         /// <summary>
         /// Returns <c>Some</c> if exactly one of this option or <paramref name="other"/> is <c>Some</c>, otherwise
