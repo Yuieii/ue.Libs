@@ -1,25 +1,10 @@
 ﻿// Copyright (c) 2025 Yuieii.
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace ue.Core
 {
-    public static class MutexExtensions
-    {
-        public static Task<IMutexGuard<T>> AcquireSharedAsync<T>(this IImmutableMutex<T> mutex)
-            => Task.Run(mutex.AcquireShared);
-
-        public static Task<IMutexGuard<T>> AcquireExclusiveAsync<T>(this IMutableMutex<T> mutex)
-            => Task.Run(mutex.AcquireExclusive);
-
-        public static Task<IUpgradableMutexGuard<TImmutable, TMutable>> AcquireUpgradableAsync<TImmutable, TMutable>(
-            this IMutex<TImmutable, TMutable> mutex)
-            => Task.Run(mutex.AcquireUpgradable);
-    }
-
     public interface IMutex : IDisposable;
 
     public interface IImmutableMutex<out T> : IMutex
@@ -156,8 +141,7 @@ namespace ue.Core
     /// <typeparam name="TImmutable">The type representing an immutable view of the underlying value.</typeparam>
     /// <typeparam name="TMutable">The type representing a mutable view of the underlying value.</typeparam>
     public class AccessViewMutex<TView, TImmutable, TMutable> :
-        IMutex<TImmutable, TMutable>,
-        IAccessView<ReadOnlyMutexGuard<TImmutable>, ReadWriteMutexGuard<TMutable>>
+        IMutex<TImmutable, TMutable>
         where TView : IAccessView<TImmutable, TMutable>
     {
         protected readonly TView _value;
@@ -178,21 +162,21 @@ namespace ue.Core
             _lock.Dispose();
         }
 
-        public ReadOnlyMutexGuard<TImmutable> AcquireShared()
+        public IMutexGuard<TImmutable> AcquireShared()
         {
             _lock.EnterReadLock();
             return new ReadOnlyMutexGuard<TImmutable>(_lock, _value.AsImmutableView());
         }
 
-        public Result<ReadOnlyMutexGuard<TImmutable>, TryLockError> TryAcquireShared()
+        public Result<IMutexGuard<TImmutable>, TryLockError> TryAcquireShared()
             => TryAcquireShared(TimeSpan.Zero);
 
-        public Result<ReadOnlyMutexGuard<TImmutable>, TryLockError> TryAcquireShared(TimeSpan timeout)
+        public Result<IMutexGuard<TImmutable>, TryLockError> TryAcquireShared(TimeSpan timeout)
         {
             try
             {
                 return _lock.TryEnterReadLock(timeout)
-                    ? Result.Success(new ReadOnlyMutexGuard<TImmutable>(_lock, _value.AsImmutableView()))
+                    ? Result.Success<IMutexGuard<TImmutable>>(new ReadOnlyMutexGuard<TImmutable>(_lock, _value.AsImmutableView()))
                     : Result.Error(TryLockError.WouldBlock);
             }
             catch (LockRecursionException)
@@ -201,21 +185,21 @@ namespace ue.Core
             }
         }
 
-        public ReadWriteMutexGuard<TMutable> AcquireExclusive()
+        public IMutexGuard<TMutable> AcquireExclusive()
         {
             _lock.EnterWriteLock();
             return new ReadWriteMutexGuard<TMutable>(_lock, _value.AsMutableView());
         }
 
-        public Result<ReadWriteMutexGuard<TMutable>, TryLockError> TryAcquireExclusive()
+        public Result<IMutexGuard<TMutable>, TryLockError> TryAcquireExclusive()
             => TryAcquireExclusive(TimeSpan.Zero);
 
-        public Result<ReadWriteMutexGuard<TMutable>, TryLockError> TryAcquireExclusive(TimeSpan timeout)
+        public Result<IMutexGuard<TMutable>, TryLockError> TryAcquireExclusive(TimeSpan timeout)
         {
             try
             {
                 return _lock.TryEnterWriteLock(timeout)
-                    ? Result.Success(new ReadWriteMutexGuard<TMutable>(_lock, _value.AsMutableView()))
+                    ? Result.Success<IMutexGuard<TMutable>>(new ReadWriteMutexGuard<TMutable>(_lock, _value.AsMutableView()))
                     : Result.Error(TryLockError.WouldBlock);
             }
             catch (LockRecursionException)
@@ -224,7 +208,7 @@ namespace ue.Core
             }
         }
 
-        public UpgradableMutexGuard<TView, TImmutable, TMutable> AcquireUpgradable()
+        public IUpgradableMutexGuard<TImmutable, TMutable> AcquireUpgradable()
         {
             _lock.EnterUpgradeableReadLock();
             return new UpgradableMutexGuard<TView, TImmutable, TMutable>(_lock, _value);
@@ -252,59 +236,13 @@ namespace ue.Core
         public TView GetValueUnsafe() => _value;
 
         #endregion
-
-        #region ---- Implementations
-
-        // ---------------
-        // IMutex implementations
-
-        IMutexGuard<TImmutable> IImmutableMutex<TImmutable>.AcquireShared() => AcquireShared();
-        IMutexGuard<TMutable> IMutableMutex<TMutable>.AcquireExclusive() => AcquireExclusive();
-
-        IUpgradableMutexGuard<TImmutable, TMutable> IMutex<TImmutable, TMutable>.AcquireUpgradable()
-            => AcquireUpgradable();
-
-        // ---------------
-        // IAccessView implementations
-
-        ReadOnlyMutexGuard<TImmutable> IAccessView<ReadOnlyMutexGuard<TImmutable>, ReadWriteMutexGuard<TMutable>>.
-            AsImmutableView() => AcquireShared();
-
-        ReadWriteMutexGuard<TMutable> IAccessView<ReadOnlyMutexGuard<TImmutable>, ReadWriteMutexGuard<TMutable>>.
-            AsMutableView() => AcquireExclusive();
-
-        #endregion
     }
 
     public enum TryLockError
     {
+        /// <summary>
+        /// The lock could not be acquired at this time because the operation would otherwise block.
+        /// </summary>
         WouldBlock
-    }
-
-    public sealed class UpgradableMutexGuard<TView, TImmutable, TMutable> :
-        ScopeGuard,
-        IUpgradableMutexGuard<TImmutable, TMutable>
-        where TView : IAccessView<TImmutable, TMutable>
-    {
-        private readonly TView _value;
-        private readonly ReaderWriterLockSlim _lock;
-
-        public UpgradableMutexGuard(ReaderWriterLockSlim @lock, TView value)
-        {
-            _lock = @lock;
-            _value = value;
-        }
-
-        public TImmutable Value => _value.AsImmutableView();
-
-        public ReadWriteMutexGuard<TMutable> Upgrade() => new(_lock, _value.AsMutableView());
-
-        protected override void EndScope()
-        {
-            _lock.ExitUpgradeableReadLock();
-        }
-
-        // ---------------
-        IMutexGuard<TMutable> IUpgradableMutexGuard<TImmutable, TMutable>.Upgrade() => Upgrade();
     }
 }

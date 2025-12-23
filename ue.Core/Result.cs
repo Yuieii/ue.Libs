@@ -106,7 +106,7 @@ namespace ue.Core
             }
 
             public Result<T, TError> FulfillErrorType<TError>()
-                => Result<T, TError>.Success(_value);
+                => Result<T, TError>.CreateSuccess(_value);
         }
 
         public class PartialWithError<T>
@@ -119,7 +119,7 @@ namespace ue.Core
             }
 
             public Result<TSuccess, T> FulfillSuccessType<TSuccess>()
-                => Result<TSuccess, T>.Error(_error);
+                => Result<TSuccess, T>.CreateError(_error);
         }
 
         public static T UnwrapOrThrow<T, TError>(this Result<T, TError> result) where TError : Exception
@@ -181,16 +181,14 @@ namespace ue.Core
             => this is SuccessBranch s ? Option<T>.Some(s.Value) : Option<T>.None;
 
         /// <inheritdoc cref="IResultError{T}.Error" />
-        public Option<TError> Err
+        public Option<TError> Error
             => this is ErrorBranch e ? Option<TError>.Some(e.Error) : Option<TError>.None;
-
-        Option<TError> IResultError<TError>.Error => Err;
 
         public T Unwrap()
             => Value.Expect("Cannot unwrap a success value from an Error branch.");
 
         public TError UnwrapError()
-            => Err.Expect("Cannot unwrap an error value from a Success branch.");
+            => Error.Expect("Cannot unwrap an error value from a Success branch.");
 
         /// <inheritdoc cref="IResult{T,TError}.Select" />
         public abstract Result<TResult, TError> Select<TResult>(Func<T, TResult> func);
@@ -248,9 +246,17 @@ namespace ue.Core
 
         // =========
 
-        public static Result<T, TError> Success(T value) => new SuccessBranch(value);
+        public static Result<T, TError> CreateSuccess(T value)
+        {
+            Validation.EnsureNotNull(value, nameof(value));
+            return new SuccessBranch(value);
+        }
 
-        public static Result<T, TError> Error(TError error) => new ErrorBranch(error);
+        public static Result<T, TError> CreateError(TError error)
+        {
+            Validation.EnsureNotNull(error, nameof(error));
+            return new ErrorBranch(error);
+        }
 
         private class SuccessBranch : Result<T, TError>
         {

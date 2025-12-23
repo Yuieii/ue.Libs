@@ -17,6 +17,7 @@ namespace ue.Core.Tests
         }
     }
 
+    [TestFixture]
     public class ResultTests
     {
         [Test]
@@ -34,7 +35,7 @@ namespace ue.Core.Tests
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(res, Is.EqualTo(Result<IEnumerable<uint>, string>.Error("Underflow!")));
+                Assert.That(res, Is.EqualTo(Result<IEnumerable<uint>, string>.CreateError("Underflow!")));
                 Assert.That(shared, Is.EqualTo(6));
             }
         }

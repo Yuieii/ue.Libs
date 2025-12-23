@@ -2,6 +2,7 @@
 
 namespace ue.Core.Tests
 {
+    [TestFixture]
     public class OptionTests
     {
         [Test]

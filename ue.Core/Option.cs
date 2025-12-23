@@ -140,6 +140,8 @@ namespace ue.Core
 
         private Option(T value)
         {
+            Validation.EnsureNotNull(value, nameof(value));
+            
             IsSome = true;
             ValueUnsafe = value;
         }
