@@ -89,4 +89,28 @@ namespace ue.Core
             _lock.ExitReadLock();
         }
     }
+
+    public sealed class UpgradableMutexGuard<TView, TImmutable, TMutable> :
+        ScopeGuard,
+        IUpgradableMutexGuard<TImmutable, TMutable>
+        where TView : IAccessView<TImmutable, TMutable>
+    {
+        private readonly TView _value;
+        private readonly ReaderWriterLockSlim _lock;
+
+        public UpgradableMutexGuard(ReaderWriterLockSlim @lock, TView value)
+        {
+            _lock = @lock;
+            _value = value;
+        }
+
+        public TImmutable Value => _value.AsImmutableView();
+
+        public IMutexGuard<TMutable> Upgrade() => new ReadWriteMutexGuard<TMutable>(_lock, _value.AsMutableView());
+
+        protected override void EndScope()
+        {
+            _lock.ExitUpgradeableReadLock();
+        }
+    }
 }
