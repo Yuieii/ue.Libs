@@ -91,6 +91,21 @@ namespace ue.Core
             return Some(self[index]);
         }
 
+        extension<T>(IOption<T> self) where T : class
+        {
+            public T? ToNullableReference()
+                => self.OrElse(null);
+        }
+
+        extension<T>(IOption<T> self) where T : struct
+        {
+            public T OrElseDefault()
+                => self.OrElse(default);
+            
+            public T? ToNullable()
+                => self.Select(v => (T?) v).OrElse(null);
+        }
+
         extension<T>(IOption<T> self)
         {
             public T OrElse(T other)
@@ -126,7 +141,7 @@ namespace ue.Core
             public IOption FulfillType(Type type)
             {
                 var t = typeof(Option<>).MakeGenericType(type);
-                return (IOption) Activator.CreateInstance(t);
+                return (IOption) Activator.CreateInstance(t)!;
             }
         }
     }

@@ -7,7 +7,7 @@ namespace ue.Core.Tests
         [Test]
         public void TestGetService()
         {
-            var container = new DependencyContainer();
+            var container = Singleton<DependencyContainer>.Instance;
             container.Register<IReadOnlyList<int>>([1, 2, 3]);
 
             using (Assert.EnterMultipleScope())

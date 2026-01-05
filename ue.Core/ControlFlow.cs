@@ -7,7 +7,9 @@ namespace ue.Core
     public static class ControlFlow
     {
         public static PartialWithBreak<T> Break<T>(T value) => new(value);
+        public static PartialWithBreak<Unit> Break() => new(Unit.Instance);
         public static PartialWithContinue<T> Continue<T>(T value) => new(value);
+        public static PartialWithContinue<Unit> Continue() => new(Unit.Instance);
 
         public class PartialWithBreak<T>(T value)
         {

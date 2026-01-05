@@ -10,7 +10,9 @@ namespace ue.Core
         private readonly ConcurrentDictionary<Type, object> _dependencies = [];
         private readonly Option<DependencyContainer> _parent;
 
-        public DependencyContainer(Option<DependencyContainer> parent = default)
+        public DependencyContainer() {}
+
+        public DependencyContainer(Option<DependencyContainer> parent)
         {
             _parent = parent;
         }
