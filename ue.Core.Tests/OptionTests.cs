@@ -220,6 +220,20 @@ namespace ue.Core.Tests
             }
         }
 
+        [Test]
+        public void TestLinq()
+        {
+            var func = Option.Some((int a) => a * 3);
+            var x = Option.Some(2);
+            
+            var result = 
+                from f in func
+                from n in x
+                select f(n);
+            
+            Assert.That(result, Is.EqualTo(Option.Some(6)));
+        }
+
         private struct Point(float x, float y)
         {
             public float X { get; set; } = x;

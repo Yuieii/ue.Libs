@@ -206,12 +206,11 @@ namespace ue.Core
 
         public Option<TResult> SelectMany<TSelectMany, TResult>(
             Func<T, Option<TSelectMany>> selector,
-            Func<Option<T>, TSelectMany, TResult> resultSelector)
+            Func<T, TSelectMany, TResult> resultSelector)
         {
             var val = ValueUnsafe;
-            var self = this;
             return IsSome
-                ? selector(val).Select(v => resultSelector(self, v))
+                ? selector(val).Select(v => resultSelector(val, v))
                 : Option<TResult>.None;
         }
 

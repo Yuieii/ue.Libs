@@ -214,11 +214,11 @@ namespace ue.Core
 
         public Result<TResult, TError> SelectMany<TMiddle, TResult>(
             Func<T, Result<TMiddle, TError>> func,
-            Func<Result<T, TError>, TMiddle, TResult> resultSelector)
+            Func<T, TMiddle, TResult> resultSelector)
         {
             return IsError
                 ? Result.Error(ErrUnsafe)
-                : func(ValueUnsafe).Select(m => resultSelector(this, m));
+                : func(ValueUnsafe).Select(m => resultSelector(ValueUnsafe, m));
         }
 
         /// <inheritdoc cref="IResult{T,TError}.SelectError" />
