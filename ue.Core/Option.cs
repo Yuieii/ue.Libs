@@ -71,7 +71,7 @@ namespace ue.Core
         /// </summary>
         public static NoneValuePlaceholder None => default;
 
-        public static Option<T> ToOption<T>(this T? value) where T : class
+        public static Option<T> ToOption<T>(this T? value)
             => value == null ? Option<T>.None : Option<T>.Some(value);
 
         public static Option<T> ToOption<T>(this T? value) where T : struct

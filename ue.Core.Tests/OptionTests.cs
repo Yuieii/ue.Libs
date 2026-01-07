@@ -13,6 +13,9 @@ namespace ue.Core.Tests
 
             var y = Option<int>.None;
             Assert.That(y.IsSome, Is.False);
+            
+            var z = 3.ToOption();
+            Assert.That(z.IsSome, Is.True);
         }
 
         [Test]
