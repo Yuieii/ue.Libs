@@ -147,7 +147,7 @@ namespace ue.Core
     }
 
     /// <inheritdoc cref="IOption{T}" />
-    public readonly struct Option<T> : IOption<T>
+    public readonly struct Option<T> : IOption<T>, IEquatable<Option<T>>
     {
         public bool IsSome { get; }
 
@@ -309,5 +309,28 @@ namespace ue.Core
             if (!IsSome || !other.IsSome) return Option.None;
             return Option.Some(zip(ValueUnsafe, other.ValueUnsafe));
         }
+
+        public bool Equals(Option<T> other)
+        {
+            if (IsSome != other.IsSome) return false;
+            if (!IsSome && !other.IsSome) return true;
+            return EqualityComparer<T>.Default.Equals(ValueUnsafe, other.ValueUnsafe);
+        }
+
+        public override bool Equals(object? obj) 
+            => obj is Option<T> other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            return IsSome 
+                ? HashCode.Combine(IsSome, ValueUnsafe) 
+                : 0;
+        }
+
+        public static bool operator ==(Option<T> left, Option<T> right) 
+            => left.Equals(right);
+
+        public static bool operator !=(Option<T> left, Option<T> right) 
+            => !left.Equals(right);
     }
 }

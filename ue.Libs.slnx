@@ -1,5 +1,6 @@
 <Solution>
     <Project Path="ue.Core/ue.Core.csproj" />
+    <Project Path="ue.Core.ConsoleTests/ue.Core.ConsoleTests.csproj" />
     <Project Path="ue.Core.Tests/ue.Core.Tests.csproj" />
     <Project Path="ue.Logging.Console/ue.Logging.Console.csproj" />
 </Solution>

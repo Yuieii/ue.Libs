@@ -54,142 +54,211 @@ namespace ue.Logging.Console
                 LogLevel logLevel, EventId eventId, TState state, Exception? exception, 
                 Func<TState, Exception?, string> formatter)
             {
-                var contents = formatter(state, exception)
-                    .TrimEnd()
-                    .Split('\n')
-                    .Select(Markup.Escape)
-                    .ToList();
+                var formatted = formatter(state, exception);
                 
-                var builder = new StringBuilder();
-
-                if (options.Style == ConsoleLogStyle.Compact)
+                Renderable entry = options.Style switch
                 {
-                    RenderOptionalException(contents, exception);
-                    
-                    foreach (var line in contents)
-                    {
-                        builder.Append(Markup.Escape("\r\x1b[K"));
-                        builder.Append("[gray]" + Markup.Escape(DateTimeOffset.Now.ToString("[yyyy-MM-dd HH:mm:ss]")) + "[/] ");
-                        OutputLevelCompact(builder, logLevel);
-                        builder.AppendLine(line);
-                    }
-                }
-                else
-                {
-                    const bool separate = true;
-                    const char timeVertical = '┬'; // separate ? '│' : '┼';
-
-                    if (separate)
-                        builder.AppendLine(
-                            ""); // "[gray]─────────────────────┼──────────────────────────────────────[/]");
-                    builder.Append("[gray] " + Markup.Escape(DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss")) +
-                                   $" {timeVertical}[/] ");
-                    OutputLevelCozy(builder, logLevel);
-                    builder.AppendLine();
-                    
-                    RenderOptionalException(contents, exception);
-
-                    var lineNumber = 0;
-                    foreach (var line in contents)
-                    {
-                        builder.Append(Markup.Escape("\r\x1b[K"));
-                        if (lineNumber == 0)
-                        {
-                            builder.Append("".PadLeft(17) + "[gray]--- │[/] ");
-                        }
-                        else
-                        {
-                            var num = (lineNumber + 1).ToString("N0");
-                            builder.Append($"{num} ".PadLeft(21) + "[gray]│[/] ");
-                        }
-
-                        lineNumber++;
-                        builder.AppendLine(line);
-                    }
-                }
-
-                // Output all at once, making it *atomic*
-                _console.Markup(builder.ToString());
-            }
-
-            private void RenderOptionalException(List<string> contents, Exception? exception)
-            {
-                if (exception == null) return;
+                    ConsoleLogStyle.Compact => new LogEntryCompact(name, logLevel, eventId, formatted, exception),
+                    _ => new LogEntryCozy(name, logLevel, eventId, formatted, exception),
+                };
                 
-                var segments = exception.GetRenderable().Render(
-                    new RenderOptions(AnsiConsole.Profile.Capabilities,
-                        new Size(AnsiConsole.Profile.Width, AnsiConsole.Profile.Height)),
-                    AnsiConsole.Profile.Width);
-
-                if (options.Style == ConsoleLogStyle.Cozy)
-                    contents.Add("");
-                
-                contents
-                    .AddRange(string.Join("", segments
-                            .Select(s =>
-                            {
-                                if (s.Text == "\n") return "\n";
-                                return $"[{s.Style.ToMarkup()}]{Markup.Escape(s.Text)}[/]";
-                            }))
-                        .TrimEnd()
-                        .Split('\n'));
-            }
-
-            private void OutputLevelCompact(StringBuilder builder, LogLevel logLevel)
-            {
-                switch (logLevel)
-                {
-                    case LogLevel.Information:
-                        builder.Append("[green]" + Markup.Escape($"[{name}/Info]") + "[/] ");
-                        break;
-                    
-                    case LogLevel.Warning:
-                        builder.Append("[gold1]" + Markup.Escape($"[{name}/Warn]") + "[/] ");
-                        break;
-                    
-                    case LogLevel.Error:
-                        builder.Append("[red]" + Markup.Escape($"[{name}/Error]") + "[/] ");
-                        break;
-                    
-                    case LogLevel.Critical:
-                        builder.Append("[red]" + Markup.Escape($"[{name}/Critical]") + "[/] ");
-                        break;
-                    
-                    default:
-                        builder.Append("[gray]" + Markup.Escape($"[{name}/{logLevel}]") + "[/] ");
-                        break;
-                }
-            }
-            
-            private void OutputLevelCozy(StringBuilder builder, LogLevel logLevel)
-            {
-                switch (logLevel)
-                {
-                    case LogLevel.Information:
-                        builder.Append("[green][white on green]" + Markup.Escape(" Info ") + "[/] " + Markup.Escape(name) + "[/] ");
-                        break;
-                    
-                    case LogLevel.Warning:
-                        builder.Append("[gold1][white on gold1]" + Markup.Escape(" Warn ") + "[/] " + Markup.Escape(name) + "[/] ");
-                        break;
-                    
-                    case LogLevel.Error:
-                        builder.Append("[red][white on red]" + Markup.Escape(" Error ") + "[/] " + Markup.Escape(name) + "[/] ");
-                        break;
-                    
-                    case LogLevel.Critical:
-                        builder.Append("[red][white on red]" + Markup.Escape(" Critical ") + "[/] " + Markup.Escape(name) + "[/] ");
-                        break;
-                    
-                    default:
-                        builder.Append("[gray][white on gray]" + Markup.Escape($" {logLevel} ") + "[/] " + Markup.Escape(name) + "[/] ");
-                        break;
-                }
+                _console.Write(entry);
             }
 
             public bool IsEnabled(LogLevel logLevel) => true;
 
             public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        }
+    }
+
+    internal class LogEntryCompact(string name, LogLevel level, EventId eventId, string formatted, Exception? exception)
+        : Renderable
+    {
+        private List<Segment> CreateHeader()
+        {
+            var style = new Style(Color.Gray);
+            var badgeText = level.ToString();
+            
+            switch (level)
+            {
+                case LogLevel.Information:
+                    style = new Style(Color.Green);
+                    badgeText = "Info";
+                    break;
+                    
+                case LogLevel.Warning:
+                    style = new Style(Color.Gold1);
+                    badgeText = "Warn";
+                    break;
+                    
+                case LogLevel.Error:
+                    style = new Style(Color.Red);
+                    break;
+                    
+                case LogLevel.Critical:
+                    style = new Style(Color.Red);
+                    break;
+            }
+
+            return
+            [
+                new Segment($"[{name}/{badgeText}]", style)
+            ];
+        }
+
+        protected override IEnumerable<Segment> Render(RenderOptions options, int maxWidth)
+        {
+            // Start building the panel
+            var result = new List<Segment>();
+
+            var timestamp = DateTimeOffset.Now.ToString("[yyyy-MM-dd HH:mm:ss] ");
+            
+            // Header
+            result.Add(new Segment(timestamp, new Style(Color.Gray)));
+
+            var header = CreateHeader();
+            result.AddRange(header);
+            result.Add(new Segment(": "));
+
+            // Content
+            var content = new Text(formatted);
+            var padLeft = timestamp.Length + header.Sum(s => s.Text.Length) + 2;
+            var segments = ((IRenderable) content).Render(options, maxWidth - padLeft);
+
+            var lineNumber = 1;
+            foreach (var line in Segment.SplitLines(segments))
+            {
+                if (lineNumber > 1)
+                {
+                    result.Add(new Segment($"[{lineNumber:N0}]".PadLeft(padLeft - 3), new Style(Color.Gray)));
+                    result.Add(new Segment(" | ", new Style(Color.Gray)));
+                }
+                
+                result.AddRange(line);
+                result.Add(Segment.LineBreak);
+                lineNumber++;
+            }
+            
+            if (exception != null)
+            {
+                var exceptionSegments = exception.GetRenderable().Render(options, maxWidth - padLeft);
+            
+                foreach (var line in Segment.SplitLines(exceptionSegments))
+                {
+                    result.Add(new Segment("".PadLeft(padLeft - 3), new Style(Color.Gray)));
+                    result.Add(new Segment(" | ", new Style(Color.Gray)));
+                    result.AddRange(line);
+                    result.Add(Segment.LineBreak);
+                }
+            }
+
+            return result;
+        }
+    }
+
+    internal class LogEntryCozy(string name, LogLevel level, EventId eventId, string formatted, Exception? exception) : Renderable
+    {
+        private List<Segment> CreateHeader()
+        {
+            var style = new Style(Color.Gray);
+            var badgeText = level.ToString();
+            var badgeColorOverride = null as Color?;
+            
+            switch (level)
+            {
+                case LogLevel.Information:
+                    style = new Style(Color.DarkOliveGreen1);
+                    badgeColorOverride = Color.DarkOliveGreen3;
+                    badgeText = "Info";
+                    break;
+                    
+                case LogLevel.Warning:
+                    style = new Style(Color.Gold1);
+                    badgeColorOverride = Color.DarkOrange3;
+                    badgeText = "Warn";
+                    break;
+                    
+                case LogLevel.Error:
+                    style = new Style(Color.Red);
+                    badgeColorOverride = Color.White;
+                    break;
+                    
+                case LogLevel.Critical:
+                    style = new Style(Color.Red);
+                    badgeColorOverride = Color.White;
+                    break;
+            }
+
+            var invertedStyle = new Style(badgeColorOverride ?? style.Background, style.Foreground, Decoration.Bold);
+            
+            return
+            [
+                new Segment($" {badgeText} ", invertedStyle),
+                new Segment(" "),
+                new Segment(name, style)
+            ];
+        }
+
+        protected override IEnumerable<Segment> Render(RenderOptions options, int maxWidth)
+        {
+            // Start building the panel
+            var result = new List<Segment>();
+
+            var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            var sideColumnWidth = timestamp.Length + 5;
+            
+            // Top Margin
+            result.Add(Segment.LineBreak);
+            
+            // Header
+            result.Add(new Segment(timestamp, new Style(Color.Gray)));
+            result.Add(new Segment(" ┬ ", new Style(Color.Gray)));
+            result.AddRange(CreateHeader());
+            result.Add(Segment.LineBreak);
+            
+            // Content
+            var content = new Text(formatted);
+            var segments = ((IRenderable) content).Render(options, maxWidth - sideColumnWidth);
+
+            var lineNumber = 1;
+            
+            foreach (var line in Segment.SplitLines(segments))
+            {
+                if (lineNumber == 1)
+                {
+                    result.Add(new Segment("---".PadLeft(timestamp.Length), new Style(Color.Gray)));
+                }
+                else
+                {
+                    result.Add(new Segment($"{lineNumber:N0}".PadLeft(timestamp.Length)));
+                }
+
+                result.Add(new Segment(" │ ", new Style(Color.Gray)));
+                result.AddRange(line);
+                result.Add(Segment.LineBreak);
+                lineNumber++;
+            }
+
+            if (exception != null)
+            {
+                var panel = new Panel(exception.GetRenderable())
+                {
+                    Border = BoxBorder.Rounded,
+                    BorderStyle = new Style(Color.Red)
+                };
+                
+                var exceptionSegments = ((IRenderable) panel).Render(options, maxWidth - sideColumnWidth);
+            
+                foreach (var line in Segment.SplitLines(exceptionSegments))
+                {
+                    result.Add(new Segment("".PadLeft(timestamp.Length)));
+                    result.Add(new Segment(" │ ", new Style(Color.Gray)));
+                    result.AddRange(line);
+                    result.Add(Segment.LineBreak);
+                }
+            }
+            
+            return result;
         }
     }
 }
