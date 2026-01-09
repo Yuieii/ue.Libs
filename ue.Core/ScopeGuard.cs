@@ -19,16 +19,9 @@ namespace ue.Core
         }
     }
 
-    public class DelegateScopeGuard : ScopeGuard
+    public class DelegateScopeGuard(Action endScope) : ScopeGuard
     {
-        private readonly Action _endScope;
-
-        private DelegateScopeGuard(Action endScope)
-        {
-            _endScope = endScope;
-        }
-
-        protected override void EndScope() => _endScope();
+        protected override void EndScope() => endScope();
     }
 
     public class SemaphoreSlimGuard : ScopeGuard
