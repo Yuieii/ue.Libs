@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using Spectre.Console.Rendering;
+using ue.Core;
 
 namespace ue.Logging.Console
 {
@@ -14,8 +15,9 @@ namespace ue.Logging.Console
         Cozy,
     }
 
-    public class ConsoleStyleOptions
+    public class ConsoleLoggerOptions
     {
+        public IAnsiConsole? Console { get; set; }
         public ConsoleLogStyle Style { get; set; } = ConsoleLogStyle.Cozy;
     }
     
@@ -24,14 +26,14 @@ namespace ue.Logging.Console
         extension(ILoggingBuilder builder)
         {
             public ILoggingBuilder AddSpectreConsole() 
-                => builder.AddProvider(new ConsoleProvider(new ConsoleStyleOptions()));
+                => builder.AddProvider(new ConsoleProvider(new ConsoleLoggerOptions()));
 
-            public ILoggingBuilder AddSpectreConsole(ConsoleStyleOptions options)
+            public ILoggingBuilder AddSpectreConsole(ConsoleLoggerOptions options)
                 => builder.AddProvider(new ConsoleProvider(options));
         }
         
 
-        private class ConsoleProvider(ConsoleStyleOptions options) : ILoggerProvider
+        private class ConsoleProvider(ConsoleLoggerOptions options) : ILoggerProvider
         {
             private readonly ConcurrentDictionary<string, ILogger> _loggers = new();
             
@@ -46,9 +48,9 @@ namespace ue.Logging.Console
             }
         }
 
-        private class ConsoleLogger(string name, ConsoleStyleOptions options) : ILogger
+        private class ConsoleLogger(string name, ConsoleLoggerOptions options) : ILogger
         {
-            private readonly IAnsiConsole _console = AnsiConsole.Console;
+            private readonly IAnsiConsole _console = options.Console ?? AnsiConsole.Console;
             
             public void Log<TState>(
                 LogLevel logLevel, EventId eventId, TState state, Exception? exception, 
