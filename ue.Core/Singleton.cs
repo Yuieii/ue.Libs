@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2026 Yuieii.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -14,9 +15,12 @@ namespace ue.Core
     }
 #endif
     
-    public class Singleton<T>
 #if NET7_0_OR_GREATER
-        : ISingleton<T>
+    public class Singleton<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        T> : ISingleton<T>
+#else
+    public class Singleton<T>
 #endif
         where T : class
     {

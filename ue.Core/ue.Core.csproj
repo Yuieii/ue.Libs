@@ -6,7 +6,7 @@
         <Title>ue.Core</Title>
         <Authors>Yuieii</Authors>
         <RepositoryUrl>https://github.com/Yuieii/ue.Libs</RepositoryUrl>
-        <Version>0.0.18</Version>
+        <Version>0.0.19</Version>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <TargetFrameworks>netstandard2.1;net7.0</TargetFrameworks>
     </PropertyGroup>

@@ -11,6 +11,9 @@ namespace ue.Core
     {
         public static ILoggerFactory LoggerFactory { get; set; } = new NullLoggerFactory();
         
+        public static ILogger GetLogger<T>()
+            => LoggerFactory.CreateLogger(GetDescriptiveName(typeof(T)));
+        
         public static ILogger GetLogger(string name)
             => LoggerFactory.CreateLogger(name);
 
@@ -19,8 +22,9 @@ namespace ue.Core
             get
             {
                 var stackTrace = new StackTrace();
-                var name = stackTrace.GetFrame(1)
-                    .ToOption()
+                var frame = stackTrace.GetFrame(1).ToOption();
+                    
+                var name = frame
                     .SelectMany(x => x.GetMethod().ToOption())
                     .SelectMany(m => m.DeclaringType.ToOption().Select(GetEffectiveType))
                     .Select(GetDescriptiveName)
