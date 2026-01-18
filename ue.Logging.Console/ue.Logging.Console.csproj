@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <TargetFrameworks>net7.0;netstandard2.1</TargetFrameworks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>0.0.8</Version>
+        <Version>0.0.10</Version>
     </PropertyGroup>
 
     <ItemGroup>

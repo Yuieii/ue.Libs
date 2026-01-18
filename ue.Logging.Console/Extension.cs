@@ -160,7 +160,7 @@ namespace ue.Logging.Console
 
     internal class LogEntryCozy(string name, LogLevel level, EventId eventId, string formatted, Exception? exception) : Renderable
     {
-        private List<Segment> CreateHeader()
+        private List<Segment> CreateHeader(RenderOptions options)
         {
             var style = new Style(Color.Gray);
             var badgeText = level.ToString();
@@ -192,10 +192,14 @@ namespace ue.Logging.Console
             }
 
             var invertedStyle = new Style(badgeColorOverride ?? style.Background, style.Foreground, Decoration.Bold);
+
+            var noColor = !options.Ansi || options.ColorSystem == ColorSystem.NoColors;
+            var prefix = noColor ? "[" : " ";
+            var suffix = noColor ? "]" : " ";
             
             return
             [
-                new Segment($" {badgeText} ", invertedStyle),
+                new Segment($"{prefix}{badgeText}{suffix}", invertedStyle),
                 new Segment(" "),
                 new Segment(name, style)
             ];
@@ -215,7 +219,7 @@ namespace ue.Logging.Console
             // Header
             result.Add(new Segment(timestamp, new Style(Color.Gray)));
             result.Add(new Segment(" ┬ ", new Style(Color.Gray)));
-            result.AddRange(CreateHeader());
+            result.AddRange(CreateHeader(options));
             result.Add(Segment.LineBreak);
             
             // Content
