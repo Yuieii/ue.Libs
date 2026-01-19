@@ -19,7 +19,11 @@ namespace ue.Core
     [RegisterLogger]
 #if NET7_0_OR_GREATER
     public partial class Singleton<
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(
+            (DynamicallyAccessedMemberTypes) 0x104007 | // AllConstructors
+            DynamicallyAccessedMemberTypes.Interfaces |
+            DynamicallyAccessedMemberTypes.PublicProperties | 
+            DynamicallyAccessedMemberTypes.NonPublicProperties)] 
         T> : ISingleton<T>
 #else
     public partial class Singleton<T>
