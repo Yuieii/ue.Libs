@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using ue.Core.Attributes;
 
 namespace ue.Core
 {
@@ -37,7 +38,7 @@ namespace ue.Core
             if (self == null) return Result.Success(Unit.Instance);
 
             var exceptions = new Lazy<List<Exception>>(() => []);
-
+            
             foreach (var action in self.GetInvocationList().Cast<T>())
             {
                 try

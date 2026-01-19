@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -19,6 +20,9 @@ namespace ue.Core
 
         public static ILogger Logger
         {
+#if NET7_0_OR_GREATER
+            [RequiresUnreferencedCode("Name inferring requires getting metadata from stack trace")]
+#endif
             get
             {
                 var stackTrace = new StackTrace();

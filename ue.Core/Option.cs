@@ -138,6 +138,10 @@ namespace ue.Core
             public Option<T> FulfillType<T>()
                 => Option<T>.None;
 
+        #if NET7_0_OR_GREATER
+            [RequiresDynamicCode("")]
+            [RequiresUnreferencedCode("")]
+        #endif
             public IOption FulfillType(Type type)
             {
                 var t = typeof(Option<>).MakeGenericType(type);

@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using ue.Core.Attributes;
 
 namespace ue.Core
 {
@@ -15,12 +16,13 @@ namespace ue.Core
     }
 #endif
     
+    [RegisterLogger]
 #if NET7_0_OR_GREATER
-    public class Singleton<
+    public partial class Singleton<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         T> : ISingleton<T>
 #else
-    public class Singleton<T>
+    public partial class Singleton<T>
 #endif
         where T : class
     {
