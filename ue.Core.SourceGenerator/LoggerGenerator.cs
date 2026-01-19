@@ -79,14 +79,7 @@ namespace ue.Core.SourceGenerator
                                                 SyntaxFactory.Token(SyntaxKind.StaticKeyword)
                                                     .WithTrailingTrivia(SyntaxFactory.Space)
                                                 ))
-                                            .WithAccessorList(SyntaxFactory.AccessorList(
-                                                SyntaxFactory.SingletonList(
-                                                    SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-                                                        .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
-                                                    )
-                                                )
-                                            )
-                                            .WithInitializer(SyntaxFactory.EqualsValueClause(
+                                            .WithExpressionBody(SyntaxFactory.ArrowExpressionClause(
                                                     SyntaxFactory.InvocationExpression(
                                                             SyntaxFactory.MemberAccessExpression(
                                                                 SyntaxKind.SimpleMemberAccessExpression,
@@ -110,7 +103,7 @@ namespace ue.Core.SourceGenerator
                                                                     )
                                                                 )
                                                             )
-                                                        )
+                                                        ) 
                                                 )
                                             )
                                             .WithSemicolonToken(

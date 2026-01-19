@@ -6,7 +6,7 @@
         <Title>ue.Core</Title>
         <Authors>Yuieii</Authors>
         <RepositoryUrl>https://github.com/Yuieii/ue.Libs</RepositoryUrl>
-        <Version>0.0.30</Version>
+        <Version>0.0.31</Version>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <TargetFrameworks>netstandard2.1;net7.0</TargetFrameworks>
         <IsAotCompatible>true</IsAotCompatible>
@@ -14,7 +14,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
-        <PackageReference Include="ue.Core.SourceGenerator" Version="0.0.10">
+        <PackageReference Include="ue.Core.SourceGenerator" Version="0.0.11">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
     </ItemGroup>
