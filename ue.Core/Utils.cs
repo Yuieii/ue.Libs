@@ -142,5 +142,11 @@ namespace ue.Core
                 return default;
             }
         }
+
+        extension(string? str)
+        {
+            public string OrEmpty()
+                => string.IsNullOrEmpty(str) ? string.Empty : str;
+        }
     }
 }

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using ue.Core.Runtime;
 
 namespace ue.Core
 {
@@ -72,10 +73,20 @@ namespace ue.Core
         public static NoneValuePlaceholder None => default;
 
         public static Option<T> ToOption<T>(this T? value)
-            => value == null ? Option<T>.None : Option<T>.Some(value);
+        {
+            if (value is ICHandle handle)
+                return handle.IsNull ? Option<T>.None : Option<T>.Some(value);
+            
+            return value == null ? Option<T>.None : Option<T>.Some(value);
+        }
 
         public static Option<T> ToOption<T>(this T? value) where T : struct
-            => value == null ? Option<T>.None : Option<T>.Some(value.Value);
+        {
+            if (value is ICHandle handle)
+                return handle.IsNull ? Option<T>.None : Option<T>.Some(value.Value);
+            
+            return value == null ? Option<T>.None : Option<T>.Some(value.Value);
+        }
 
         public static IOption<T> Cast<T>(this IOption self)
             => (IOption<T>) self;
