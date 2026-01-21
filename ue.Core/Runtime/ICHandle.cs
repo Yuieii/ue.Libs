@@ -14,14 +14,16 @@ namespace ue.Core.Runtime
         }
     }
     
-    public interface ICHandle
+    public interface ICHandle : INullable
     {
         CHandle Handle { get; }
         
         bool IsNull => Handle == CHandle.Null;
+
+        bool INullable.HasValue => !IsNull;
     }
 
-    public interface ICHandle<T> : ICHandle
+    public interface ICHandle<out T> : ICHandle, INullable<T>
         where T : struct, ICHandle<T>
     {
 #if NET7_0_OR_GREATER
@@ -36,5 +38,7 @@ namespace ue.Core.Runtime
                 return Unsafe.As<T, CHandle>(ref self);
             }
         }
+
+        T INullable<T>.Value => (T) this;
     }
 }

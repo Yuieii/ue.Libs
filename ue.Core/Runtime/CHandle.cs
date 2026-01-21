@@ -12,7 +12,7 @@ namespace ue.Core.Runtime
         
         public bool IsNull => this == Null;
         
-        internal CHandle(nint handle)
+        public CHandle(nint handle)
         {
             Handle = handle;
         }

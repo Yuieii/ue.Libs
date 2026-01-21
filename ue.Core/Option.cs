@@ -74,18 +74,18 @@ namespace ue.Core
 
         public static Option<T> ToOption<T>(this T? value)
         {
-            if (value is ICHandle handle)
-                return handle.IsNull ? Option<T>.None : Option<T>.Some(value);
+            if (value is IOption opt)
+                return opt.Cast<T>().SafeUnbox();
+            
+            if (value is INullable nullable)
+                return nullable.HasValue ? Option<T>.Some(value) : Option<T>.None;
             
             return value == null ? Option<T>.None : Option<T>.Some(value);
         }
 
         public static Option<T> ToOption<T>(this T? value) where T : struct
         {
-            if (value is ICHandle handle)
-                return handle.IsNull ? Option<T>.None : Option<T>.Some(value.Value);
-            
-            return value == null ? Option<T>.None : Option<T>.Some(value.Value);
+            return value?.ToOption() ?? Option<T>.None; 
         }
 
         public static IOption<T> Cast<T>(this IOption self)

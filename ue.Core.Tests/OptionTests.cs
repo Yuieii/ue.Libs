@@ -1,5 +1,9 @@
 // Copyright (c) 2025 Yuieii.
 
+using System.Numerics;
+using System.Runtime.InteropServices;
+using ue.Core.Runtime;
+
 namespace ue.Core.Tests
 {
     [TestFixture]
@@ -238,10 +242,49 @@ namespace ue.Core.Tests
             Assert.That(result, Is.EqualTo(Option.Some(6)));
         }
 
+        [Test]
+        public void TestNullableInterfaceToOption()
+        {
+            CHandle? a = null;
+            Assert.That(a.ToOption(), Is.EqualTo(Option<CHandle>.None));
+            
+            CHandle? b = CHandle.Null;
+            Assert.That(b.ToOption(), Is.EqualTo(Option<CHandle>.None));
+
+            var ptr = Marshal.AllocHGlobal(4);
+            using var scope = new DelegateScopeGuard(() => Marshal.FreeHGlobal(ptr));
+            
+            CHandle? c = new CHandle(ptr);
+            Assert.That(c.ToOption(), Is.EqualTo(Option<CHandle>.Some(c.Value)));
+
+            NonZero<int> d = default;
+            Assert.That(d.ToOption(), Is.EqualTo(Option<NonZero<int>>.None));
+
+            NonZero<int> e = new NonZero<int>(1);
+            Assert.That(e.ToOption(), Is.EqualTo(Option<NonZero<int>>.Some(new NonZero<int>(1))));
+        }
+
         private struct Point(float x, float y)
         {
             public float X { get; set; } = x;
             public float Y { get; set; } = y;
+        }
+
+        private readonly struct NonZero<T> : INullable<T> where T : INumber<T>
+        {
+            private readonly T _value;
+
+            public NonZero(T value)
+            {
+                if (value == T.Zero)
+                    throw new ArgumentException("Cannot explicitly construct a NonZero with zero.", nameof(value));
+
+                _value = value;
+            }
+
+            bool INullable.HasValue => _value != T.Zero;
+
+            T INullable<T>.Value => _value;
         }
     }
 }
