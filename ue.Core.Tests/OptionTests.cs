@@ -251,17 +251,15 @@ namespace ue.Core.Tests
             CHandle? b = CHandle.Null;
             Assert.That(b.ToOption(), Is.EqualTo(Option<CHandle>.None));
 
-            var ptr = Marshal.AllocHGlobal(4);
-            using var scope = new DelegateScopeGuard(() => Marshal.FreeHGlobal(ptr));
-            
-            CHandle? c = new CHandle(ptr);
-            Assert.That(c.ToOption(), Is.EqualTo(Option<CHandle>.Some(c.Value)));
-
             NonZero<int> d = default;
             Assert.That(d.ToOption(), Is.EqualTo(Option<NonZero<int>>.None));
 
             NonZero<int> e = new NonZero<int>(1);
             Assert.That(e.ToOption(), Is.EqualTo(Option<NonZero<int>>.Some(new NonZero<int>(1))));
+
+            using var scope = new AllocHGlobalScopeGuard(4);
+            CHandle c = scope.Handle;
+            Assert.That(c.ToOption(), Is.EqualTo(Option<CHandle>.Some(c)));
         }
 
         private struct Point(float x, float y)

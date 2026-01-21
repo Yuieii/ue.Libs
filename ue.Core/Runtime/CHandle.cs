@@ -16,6 +16,9 @@ namespace ue.Core.Runtime
         {
             Handle = handle;
         }
+        
+        public static implicit operator CHandle(nint handle) => new(handle);
+        public static implicit operator nint(CHandle handle) => handle.Handle;
 
         public bool Equals(CHandle other)
         {
